@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 日志文件路径 -->
+    <property name="logPath" value="./logs/"></property>
+    <!-- 日志文件名称 -->
+    <property name="logName" value="runtime"></property>
+
+    <logger name="org.springboot.sample" level="ERROR"/>
+    <logger name="org.springframework.web" level="ERROR"/>
+    <logger name="_org.springframework.web" level="ERROR"/>
+    <logger name="org.springframework.data" level="ERROR"/>
+    <logger name="org.springframework.core" level="ERROR"/>
+    <logger name="org.springframework.boot" level="ERROR"/>
+    <logger name="org.springframework.beans" level="ERROR"/>
+    <logger name="org.springframework.context" level="ERROR"/>
+    <logger name="org.springframework.jmx" level="ERROR"/>
+    <logger name="org.springframework.scheduling" level="ERROR"/>
+    <logger name="io.netty" level="ERROR"/>
+    <logger name="io.lettuce" level="ERROR"/>
+    <logger name="org.apache.http.wire" level="ERROR"/>
+    <logger name="org.apache.http.headers" level="ERROR"/>
+    <logger name="org.apache.http.impl" level="ERROR"/>
+    <logger name="org.apache.http.conn.ssl" level="ERROR"/>
+    <logger name="org.apache.http.client" level="ERROR"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%p] - %m%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- debug 日志文件 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 正在记录的日志文档的路径及文档名 -->
+        <file>${logPath}${logName}.log</file>
+        <!--日志文档输出格式-->
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] [%c] [%p] - %m%n</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+        <!-- 日志记录器的滚动策略，按日期，按大小记录 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 日志归档 -->
+            <fileNamePattern>${logPath}${logName}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1024MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <!--日志文档保留天数-->
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 基础日志等级 -->
+    <root level="INFO">
+        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>
+

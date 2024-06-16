@@ -1,0 +1,10 @@
+server:
+  port: 8501
+spring:
+  profiles:
+    active: dev
+mybatis:
+  mapper-locations: classpath:mapper/*Mapper.xml
+  type-aliases-package: com.mars.cds.entity
+logging:
+  config: classpath:logback.xml

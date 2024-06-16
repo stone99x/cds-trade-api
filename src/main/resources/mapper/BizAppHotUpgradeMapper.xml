@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mars.cds.mapper.BizAppHotUpgradeMapper">
+
+    <select id="selectOne" resultType="BizAppHotUpgrade">
+        SELECT `id`,
+               `version`,
+               `download`,
+               `newDownload`,
+               `size`,
+               `apkMinHotupdateVer`,
+               `apkInstall`,
+               `apkNewInstall`,
+               `iosMinHotupdateVer`,
+               `iosInstall`,
+               `iosNewInstall`
+        FROM `biz_app_hot_upgrade` t
+        WHERE t.`status` = 1
+        ORDER BY t.`id` DESC LIMIT 1;
+    </select>
+
+</mapper>

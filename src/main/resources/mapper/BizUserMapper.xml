@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mars.cds.mapper.BizUserMapper">
+    <sql id="Base_Column_List">
+        id
+        ,
+        username,
+        phone,
+        `password`,
+        selfId,
+        inviteId,
+        balance,
+        teamBalance,
+        ifnull(teamNumber, 0) as teamNumber,
+        betAmount,
+        teamBetAmount,
+        firstLoginTime,
+        lastLoginTime,
+        ip,
+        ipRegion,
+        `type`,
+        `status`,
+        createTime,
+        updateTime,
+        salary,
+        profilePicture,
+        sex,
+        remarkId,
+        firstRecharge,
+        serviceUrl,
+        serviceUrlWs,
+        levelNumber,
+        userProperty,
+        firstRechargeSendStatus,
+        addContactStatus,
+        promoterCode
+    </sql>
+
+    <select id="queryExistBizUser" resultType="int">
+        select count(1)
+        from biz_user
+        where phone = #{phone}
+    </select>
+
+    <select id="queryExistInviteId" resultType="int">
+        select count(1)
+        from biz_user
+        where selfId = #{inviteId}
+          and (status = 1 or status = 3)
+    </select>
+
+    <insert id="insertBizUser" keyColumn="id" keyProperty="id" parameterType="BizUser"
+            useGeneratedKeys="true">
+        insert into biz_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="username != null">
+                username,
+            </if>
+            <if test="phone != null">
+                phone,
+            </if>
+            <if test="password != null">
+                `password`,
+            </if>
+            <if test="selfId != null">
+                selfId,
+            </if>
+            <if test="inviteId != null">
+                inviteId,
+            </if>
+            <if test="balance != null">
+                balance,
+            </if>
+            <if test="teamBalance != null">
+                teamBalance,
+            </if>
+            <if test="teamNumber != null">
+                teamNumber,
+            </if>
+            <if test="betAmount != null">
+                betAmount,
+            </if>
+            <if test="teamBetAmount != null">
+                teamBetAmount,
+            </if>
+            firstLoginTime,
+            lastLoginTime,
+            <if test="ip != null">
+                ip,
+            </if>
+            <if test="ipRegion != null">
+                ipRegion,
+            </if>
+            <if test="type != null">
+                `type`,
+            </if>
+            <if test="status != null">
+                `status`,
+            </if>
+            createTime,
+            updateTime,
+            <if test="salary != null">
+                salary,
+            </if>
+            <if test="profilePicture != null and profilePicture != ''">
+                profilePicture,
+            </if>
+            <if test="sex != null">
+                sex,
+            </if>
+            <if test="remark != null and remark != ''">
+                remark,
+            </if>
+            betRebateStatus,
+            promoterCode,
+            remarkId
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="username != null">
+                #{username},
+            </if>
+            <if test="phone != null">
+                #{phone},
+            </if>
+            <if test="password != null">
+                #{password},
+            </if>
+            <if test="selfId != null">
+                #{selfId},
+            </if>
+            <if test="inviteId != null">
+                #{inviteId},
+            </if>
+            <if test="balance != null">
+                #{balance},
+            </if>
+            <if test="teamBalance != null">
+                #{teamBalance},
+            </if>
+            <if test="teamNumber != null">
+                #{teamNumber},
+            </if>
+            <if test="betAmount != null">
+                #{betAmount},
+            </if>
+            <if test="teamBetAmount != null">
+                #{teamBetAmount},
+            </if>
+            now(),
+            now(),
+            <if test="ip != null">
+                #{ip},
+            </if>
+            <if test="ipRegion != null">
+                #{ipRegion},
+            </if>
+            <if test="type != null">
+                #{type},
+            </if>
+            <if test="status != null">
+                #{status},
+            </if>
+            now(),
+            now(),
+            <if test="salary != null">
+                #{salary},
+            </if>
+            <if test="profilePicture != null and profilePicture != ''">
+                #{profilePicture},
+            </if>
+            <if test="sex != null">
+                #{sex},
+            </if>
+            <if test="remark != null and remark != ''">
+                #{remark},
+            </if>
+            #{betRebateStatus},
+            #{promoterCode},
+            #{remarkId}
+        </trim>
+    </insert>
+
+    <select id="queryLogin" resultType="BizUser">
+        select t.`id`,
+               t.`username`,
+               t.`phone`,
+               t.`password`,
+               t.`selfId`,
+               t.`inviteId`,
+               t.`level`,
+               t.`balance`,
+               t.`firstLoginTime`,
+               t.`lastLoginTime`,
+               t.`ip`,
+               t.`ipRegion`,
+               t.`status`,
+               t.`onlineH5Status`,
+               t.`onlineAppStatus`,
+               t.`remark`,
+               t.`createTime`,
+               t.`updateTime`
+        from `biz_user` t
+        where t.`phone` = #{phone}
+          and t.`password` = #{password}
+    </select>
+
+    <update id="updateUserInfo" parameterType="BizUser">
+        update biz_user
+        set password   = #{password},
+            updateTime = now()
+        where phone = #{phone}
+    </update>
+
+    <update id="updateUserLastLoginTime" parameterType="BizUser">
+        update biz_user
+        <set>
+            lastLoginTime = now(),
+            sessionId =#{sessionId},
+            loginCount = loginCount + 1,
+            <if test="onlineAppStatus != null">
+                onlineAppStatus = 1,
+            </if>
+            <if test="onlineStatus != null">
+                onlineStatus = 1,
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateUserLastLoginIP" parameterType="BizUser">
+        update biz_user
+        set ip       = #{ip},
+            ipRegion = #{ipRegion}
+        where id = #{id};
+    </update>
+
+    <update id="updateLoginCountAndLoginTime">
+        update biz_user
+        <set>
+            loginCount = loginCount + 1,
+            lastLoginTime = now(),
+            <!--            <if test="ip != null and ip != '' ">-->
+            <!--                ip            = #{ip},-->
+            <!--            </if>-->
+            <!--            <if test="ipRegion != null and ipRegion != '' ">-->
+            <!--                ipRegion      = #{ipRegion},-->
+            <!--            </if>-->
+            <if test="onlineAppStatus != null">
+                onlineAppStatus = 1,
+            </if>
+            <if test="onlineStatus != null">
+                onlineStatus = 1,
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <update id="updateOnlineStatus" parameterType="BizUser">
+        update biz_user
+        set onlineStatus    = 2,
+            onlineAppStatus = 2
+        where id = #{id}
+    </update>
+
+    <select id="queryTeamBalance" resultType="java.lang.Long">
+        SET SESSION group_concat_max_len = 1000000;
+        SELECT sum(T3.balance)
+        FROM (SELECT @codes as _ids,
+                     (SELECT @codes := GROUP_CONCAT(selfId)
+                      FROM biz_user
+                      WHERE FIND_IN_SET(inviteId, @codes)) as T1,
+                     @l := @l + 1                          as level_
+              FROM biz_user,
+                  (SELECT @codes := #{selfId}, @l := 0) T4
+              WHERE @codes IS NOT NULL) T2,
+             biz_user T3
+        WHERE FIND_IN_SET(T3.selfId, T2._ids)
+          and T2.level_ in (1, 2, 3, 4)
+    </select>
+
+    <update id="updateBalance">
+        update biz_user
+        set balance = #{balance},
+        <if test="scorePool != null and scorePool != 0">
+            scorePool = scorePool - #{scorePool},
+        </if>
+        <if test="giveAmount != null and giveAmount != 0">
+            giveAmount = giveAmount - #{giveAmount},
+        </if>
+        updateTime = now()
+        where id = #{id}
+    </update>
+
+    <select id="queryBalanceAndSelfId" resultType="BizUser">
+        select id,
+               balance,
+               selfId,
+               withdrawStatus,
+               teamBalance,
+               phone,
+               username,
+               inviteId,
+               scorePool,
+               scoreMultiple,
+               giveAmount,
+               giveMultiple
+        from biz_user
+        where id = #{userId}
+    </select>
+
+    <insert id="insertUserLoginLog" keyColumn="id" keyProperty="id"
+            parameterType="BizUserLoginLog" useGeneratedKeys="true">
+        insert into biz_user_login_log (userId, ip, ipRegion, loginTime, dataSources)
+        values (#{userId}, #{ip}, #{ipRegion}, now(), #{dataSources})
+    </insert>
+
+    <update id="updateBalanceInfo" parameterType="BizUser">
+        UPDATE biz_user t
+        SET t.balance=#{balance},
+            t.betAmount=#{betAmount},
+            t.scorePool=t.scorePool + #{scorePool},
+            t.updateTime=NOW()
+        WHERE t.id = #{id}
+    </update>
+
+    <select id="queryUserDetail" resultType="BizUser">
+        select
+        <include refid="Base_Column_List"/>
+        from biz_user
+        where id = #{id}
+    </select>
+
+    <select id="queryUserDetailById" resultType="BizUser">
+        select
+        <include refid="Base_Column_List"/>
+        from biz_user
+        where id = #{id}
+    </select>
+
+
+    <select id="queryBalanceInfo" resultType="BizUser">
+        select t.id, balance, betAmount, betRebateStatus, inviteId
+        from biz_user t
+        where id = #{userId} for
+            update;
+    </select>
+
+    <update id="updateBasicInfo">
+        update biz_user
+        <set>
+            <if test="profilePicture != null and profilePicture != ''">
+                profilePicture = #{profilePicture},
+            </if>
+            <if test="sex != null">
+                sex = #{sex},
+            </if>
+            <if test="remark != null and remark != ''">
+                remark = #{remark}
+            </if>
+        </set>
+        where id = #{id}
+    </update>
+
+    <select id="queryBalanceBySelfId" resultType="BizUser">
+        select id,
+               username,
+               phone,
+               password,
+               selfId,
+               inviteId,
+               balance,
+               teamBalance,
+               teamNumber,
+               betAmount,
+               teamBetAmount,
+               firstLoginTime,
+               lastLoginTime,
+               ip,
+               ipRegion,
+               type,
+               status,
+               betRebateStatus,
+               withdrawStatus,
+               onlineStatus,
+               createTime,
+               updateTime,
+               salary,
+               profilePicture,
+               sex,
+               remark,
+               firstRecharge,
+               userProperty
+        from biz_user
+        where selfId = #{inviteId}
+    </select>
+
+    <update id="updateTeamLevelNumber">
+        update biz_user
+        set levelNumber = #{levelNumber},
+            remark      = #{remark},
+            serviceUrl  = #{serviceUrl},
+            updateTime  = now()
+        where id = #{id};
+    </update>
+
+    <update id="updateTeamNumber">
+        update biz_user
+        set teamNumber = teamNumber + 1,
+            updateTime = now()
+        where id = #{id};
+    </update>
+
+
+    <select id="queryFatherUserInfo" resultType="Map">
+        select remark, serviceUrl
+        from biz_user
+        where selfId = #{fatherInviteId}
+    </select>
+
+    <update id="updateTeamAmountInfo">
+        update biz_user t
+        set t.teamBalance   = t.teamBalance + #{teamBalance},
+            t.teamBetAmount = t.teamBetAmount + #{teamBetAmount},
+            t.updateTime    = now()
+        where t.id = #{id};
+    </update>
+
+    <update id="updateTeamRecharge">
+        update biz_user t
+        set t.teamBalance = t.teamBalance + #{teamBalance},
+            t.updateTime  = now()
+        where t.id = #{id};
+    </update>
+
+    <update id="updateTeamWithdraw">
+        update biz_user t
+        set t.teamBalance = t.teamBalance - #{teamBalance},
+            t.updateTime  = now()
+        where t.id = #{id};
+    </update>
+
+    <update id="updateRechargeSendStatus">
+        update biz_user t
+        set t.firstRechargeSendStatus = 1,
+            t.updateTime              = now()
+        where t.id = #{id}
+    </update>
+
+    <update id="updateAddContactStatus">
+        update biz_user t
+        set t.addContactStatus = 1,
+            t.updateTime       = now()
+        where t.id = #{id}
+    </update>
+
+    <update id="updateUserBalanceBySign">
+        update biz_user t
+        set t.balance    = t.balance + #{balance},
+            t.updateTime = now()
+        where t.id = #{id};
+    </update>
+
+    <select id="queryUserBalanceForUpdate" resultType="java.lang.Long">
+        select balance
+        from biz_user
+        where id = #{id}
+            FOR
+                UPDATE;
+    </select>
+
+    <update id="updateSalaryBalance">
+        update biz_user t
+        set t.salary   = t.salary - #{salary},
+            updateTime = now()
+        where id = #{id}
+    </update>
+
+    <select id="queryUserRemarkId" resultType="java.lang.Integer">
+        select remarkId
+        from biz_user
+        where selfId = #{selfId}
+    </select>
+
+</mapper>
