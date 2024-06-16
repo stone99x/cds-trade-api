@@ -29,6 +29,7 @@ public class PojoAccessFilter extends BaseAccessFilter {
 
     // 不需要登录验证的URL
     private static String[] notNeedValidationUrlsPrefix = new String[]{
+            "/api/user/getRegisterOtp",
             "/api/user/register",
             "/api/user/login",
             "/api/hotUpgrade/queryHotUpgrade",

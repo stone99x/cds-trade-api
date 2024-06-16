@@ -9,7 +9,7 @@ import java.util.Map;
 
 @Repository
 public interface BizUserMapper {
-    
+
     /**
      * 根据电话号码查询玩家是否存在
      *
@@ -24,7 +24,7 @@ public interface BizUserMapper {
      * @param inviteId
      * @return
      */
-    int queryExistInviteId(@Param("inviteId") String inviteId);
+    BizUser queryExistInviteId(@Param("inviteId") String inviteId);
 
     /**
      * 保存玩家信息：注册

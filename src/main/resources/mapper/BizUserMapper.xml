@@ -37,148 +37,22 @@
         promoterCode
     </sql>
 
-    <select id="queryExistBizUser" resultType="int">
+    <select id="queryExistBizUser" parameterType="string" resultType="int">
         select count(1)
         from biz_user
         where phone = #{phone}
     </select>
 
-    <select id="queryExistInviteId" resultType="int">
-        select count(1)
-        from biz_user
-        where selfId = #{inviteId}
-          and (status = 1 or status = 3)
+    <select id="queryExistInviteId" parameterType="string" resultType="BizUser">
+        select t.id, t.level, t.inviteId, t.status
+        from biz_user t
+        where t.selfId = #{inviteId}
     </select>
 
     <insert id="insertBizUser" keyColumn="id" keyProperty="id" parameterType="BizUser"
             useGeneratedKeys="true">
-        insert into biz_user
-        <trim prefix="(" suffix=")" suffixOverrides=",">
-            <if test="username != null">
-                username,
-            </if>
-            <if test="phone != null">
-                phone,
-            </if>
-            <if test="password != null">
-                `password`,
-            </if>
-            <if test="selfId != null">
-                selfId,
-            </if>
-            <if test="inviteId != null">
-                inviteId,
-            </if>
-            <if test="balance != null">
-                balance,
-            </if>
-            <if test="teamBalance != null">
-                teamBalance,
-            </if>
-            <if test="teamNumber != null">
-                teamNumber,
-            </if>
-            <if test="betAmount != null">
-                betAmount,
-            </if>
-            <if test="teamBetAmount != null">
-                teamBetAmount,
-            </if>
-            firstLoginTime,
-            lastLoginTime,
-            <if test="ip != null">
-                ip,
-            </if>
-            <if test="ipRegion != null">
-                ipRegion,
-            </if>
-            <if test="type != null">
-                `type`,
-            </if>
-            <if test="status != null">
-                `status`,
-            </if>
-            createTime,
-            updateTime,
-            <if test="salary != null">
-                salary,
-            </if>
-            <if test="profilePicture != null and profilePicture != ''">
-                profilePicture,
-            </if>
-            <if test="sex != null">
-                sex,
-            </if>
-            <if test="remark != null and remark != ''">
-                remark,
-            </if>
-            betRebateStatus,
-            promoterCode,
-            remarkId
-        </trim>
-        <trim prefix="values (" suffix=")" suffixOverrides=",">
-            <if test="username != null">
-                #{username},
-            </if>
-            <if test="phone != null">
-                #{phone},
-            </if>
-            <if test="password != null">
-                #{password},
-            </if>
-            <if test="selfId != null">
-                #{selfId},
-            </if>
-            <if test="inviteId != null">
-                #{inviteId},
-            </if>
-            <if test="balance != null">
-                #{balance},
-            </if>
-            <if test="teamBalance != null">
-                #{teamBalance},
-            </if>
-            <if test="teamNumber != null">
-                #{teamNumber},
-            </if>
-            <if test="betAmount != null">
-                #{betAmount},
-            </if>
-            <if test="teamBetAmount != null">
-                #{teamBetAmount},
-            </if>
-            now(),
-            now(),
-            <if test="ip != null">
-                #{ip},
-            </if>
-            <if test="ipRegion != null">
-                #{ipRegion},
-            </if>
-            <if test="type != null">
-                #{type},
-            </if>
-            <if test="status != null">
-                #{status},
-            </if>
-            now(),
-            now(),
-            <if test="salary != null">
-                #{salary},
-            </if>
-            <if test="profilePicture != null and profilePicture != ''">
-                #{profilePicture},
-            </if>
-            <if test="sex != null">
-                #{sex},
-            </if>
-            <if test="remark != null and remark != ''">
-                #{remark},
-            </if>
-            #{betRebateStatus},
-            #{promoterCode},
-            #{remarkId}
-        </trim>
+        insert into biz_user(`username`, `phone`, `password`, `selfId`, `inviteId`, `level`)
+            value (#{username}, #{phone}, #{password}, #{selfId}, #{inviteId}, #{level})
     </insert>
 
     <select id="queryLogin" resultType="BizUser">
@@ -198,6 +72,8 @@
                t.`onlineH5Status`,
                t.`onlineAppStatus`,
                t.`remark`,
+               t.`withdrawStatus`,
+               t.`del`,
                t.`createTime`,
                t.`updateTime`
         from `biz_user` t

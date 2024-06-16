@@ -34,4 +34,10 @@ public class FrameConstant {
      * 保留2位小数
      */
     public static final int amountDigit2 = 2;
+
+    // 验证手机号正则: ^(?:\+91|91|0)?[6-9]\d{9}$
+    public static final String phoneRegx = "^[6-9]\\d{9}$";
+    public static final String otpCodeRegx = "^\\d{6}$";
+    // otp过期时间
+    public static final int otpExpired = 120;
 }

@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.Objects;
-import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class BizUserService {
@@ -43,79 +42,121 @@ public class BizUserService {
     private BizIpRegionIPv6Service bizIpRegionIPv6Service;
     @Resource
     private BizConfigMapper bizConfigMapper;
+    @Resource
+    private BizOtpService bizOtpService;
 
-    /**
-     * 保存用户：注册 code:10000
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public RespBody saveBizUser(BizUser bizUser) {
-
-        int session = 10000;
-
-        //电话号码不能为空
-        if (StringUtils.isBlank(bizUser.getPhone())) {
-            LogUtils.info(log, "电话号码不能为空", session, bizUser.getPhone());
-            return RespBodyUtils.failure("The phone number cannot be empty！");
+    // 获取注册otp
+    public RespBody<String> getRegisterOtp(JSONObject params) {
+        String phone = params.getString("phone");
+        if (StringUtils.isEmpty(phone)) {
+            LogUtils.info(log, "注册时手机号码不能为空");
+            return RespBodyUtils.failure("Mobile phone number cannot be empty");
         }
-        //邀请码id不能为空，如果没有不能注册
-        if (StringUtils.isBlank(bizUser.getInviteId())) {
-            LogUtils.info(log, "邀请id不能为空", session, bizUser.getPhone());
-            return RespBodyUtils.failure("Please enter the invitation id");
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "注册时手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
         }
-
-        //密码不能为空
-        if (StringUtils.isBlank(bizUser.getPassword())) {
-            LogUtils.info(log, "密码不能为空！", session, bizUser.getPhone());
-            return RespBodyUtils.failure("The password cannot be empty！");
+        // 先获取缓存是否存在，若存在等失效后，才可以发送
+        String appRegisterKey = String.format(FrameConstant.appRegisterKey, phone);
+        String registerOtpCode = redisClientBean.get(appRegisterKey);
+        if (!StringUtils.isEmpty(registerOtpCode)) {
+            LogUtils.info(log, "注册时OTP已发送, 请稍后再试", phone, registerOtpCode);
+            return RespBodyUtils.failure("OTP has been sent, please try again later");
         }
-
-        //查询同一个盘中，查询用户是否存在在,通过电话号码进行判断
-        int queryExistBizUser = bizUserMapper.queryExistBizUser(bizUser.getPhone());
+        //查询用户是否存在在, 通过电话号码进行判断
+        int queryExistBizUser = bizUserMapper.queryExistBizUser(phone);
 
         //如果存在，该用户已经存在，请登录
         if (queryExistBizUser > NumberUtil.NUMBER_ZERO) {
-            LogUtils.info(log, "此号码已注册，请重新输入!", session, bizUser.getPhone());
-            return RespBodyUtils.failure("This number is registered, please re-enter!");
+            LogUtils.info(log, "注册时手机号码已注册，请重新输入", phone);
+            return RespBodyUtils.failure("This number is registered, please re-enter");
+        }
+        //随机生成6位验证码
+        String code = FrameUtils.getRandomIntLen(6);
+        String content = String.format("Your registered otp is: %s, please do not give it to others to avoid losses", code);
+        redisClientBean.put(appRegisterKey, code, FrameConstant.otpExpired);
+        bizOtpService.sendOtp(phone, content);
+        LogUtils.info(log, "注册OTP代码", phone, code);
+        return RespBodyUtils.success("OTP sent successfully");
+    }
+
+    // 用户注册
+    public RespBody registerUser(JSONObject params, BizUser bizUser) {
+        if (StringUtils.isEmpty(bizUser.getPhone())) {
+            LogUtils.info(log, "注册手机号码不能为空", bizUser.getPhone());
+            return RespBodyUtils.failure("Phone number can not be empty");
+        }
+        String phone = bizUser.getPhone();
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "注册时手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
+        }
+        String otpCode = params.getString("otpCode");
+        if (StringUtils.isEmpty(otpCode)) {
+            LogUtils.info(log, "注册时OTP不能为空", phone);
+            return RespBodyUtils.failure("Registration OTP cannot be empty");
+        }
+        if (!otpCode.matches(FrameConstant.otpCodeRegx)) {
+            LogUtils.info(log, "注册时OTP格式不正确", phone);
+            return RespBodyUtils.failure("The OTP format is incorrect");
+        }
+        if (StringUtils.isBlank(bizUser.getPassword())) {
+            LogUtils.info(log, "注册时密码不能为空", phone);
+            return RespBodyUtils.failure("The password cannot be empty");
+        }
+        int passwordLength = bizUser.getPassword().length();
+        if (passwordLength < 6 || passwordLength > 18) {
+            LogUtils.info(log, "注册时密码长度不正确", phone, passwordLength);
+            return RespBodyUtils.failure("The password length should be between 6 and 18 characters.");
+        }
+        int level; // 注册用户等级
+        if (StringUtils.isEmpty(bizUser.getInviteId())) {
+            level = 1;
+            bizUser.setInviteId("");
+        } else {
+            // 查询邀请码id是否存在
+            BizUser userInviteId = bizUserMapper.queryExistInviteId(bizUser.getInviteId());
+            if (userInviteId == null) {
+                LogUtils.info(log, "邀请码不正确", phone, bizUser.getInviteId());
+                return RespBodyUtils.failure("Invalid invitation code");
+            }
+            if (userInviteId.getStatus() != 1) {
+                LogUtils.info(log, "邀请码不可用", phone, bizUser.getInviteId());
+                return RespBodyUtils.failure("Invitation code not available");
+            }
+            level = userInviteId.getLevel() + 1;
+        }
+
+        //查询用户是否存在在, 通过电话号码进行判断
+        int queryExistBizUser = bizUserMapper.queryExistBizUser(phone);
+        //如果存在，该用户已经存在，请登录
+        if (queryExistBizUser > NumberUtil.NUMBER_ZERO) {
+            LogUtils.info(log, "注册时手机号码已注册，请重新输入", phone);
+            return RespBodyUtils.failure("This number is registered, please re-enter");
         }
 
         //查询redis里面的OTP，校验通过，则注册成功
-        String appRegisterKey = String.format(FrameConstant.appRegisterKey, bizUser.getPhone());
-        String registerOTPValue = redisClientBean.get(appRegisterKey);
-        String registerOTP = "";
-        if (StringUtils.isNotBlank(registerOTPValue)) {
-            registerOTP = registerOTPValue.substring(0, 6);
+        String appRegisterKey = String.format(FrameConstant.appRegisterKey, phone);
+        String registerOtpCode = redisClientBean.get(appRegisterKey);
+        if (StringUtils.isEmpty(registerOtpCode)) {
+            LogUtils.info(log, "注册时OTP为空", phone);
+            return RespBodyUtils.failure("Please obtain OTP first");
         }
-
-        /*if (!Objects.equals(registerOTP, bizUser.getOTP())) {
+        if (!Objects.equals(registerOtpCode, otpCode)) {
             LogUtils.info(log, "OTP错误，请重新输入");
-            return RespBodyUtils.failure("OTP error, please re-enter！");
-        }*/
-        redisClientBean.remove(appRegisterKey);
-        int min = 1;
-        int max = 99;
-        ThreadLocalRandom tlr = ThreadLocalRandom.current();
-        Integer picture = tlr.nextInt(min, max + 1);
-
-
-        int levelNumber = 0;
-        //头像随机1-100
-        bizUser.setSelfId(FrameUtils.getRandomStrLen(NumberUtil.NUMBER_EIGHT));
-        bizUser.setInviteId(bizUser.getInviteId());
-        bizUser.setUsername(bizUser.getPhone());
-        String invitationCode = "";
-        String promoterCode = bizUser.getInviteId();
-
-        //查询邀请码id是否存在
-        int queryExistInviteId = bizUserMapper.queryExistInviteId(invitationCode);
-
-        if (Objects.equals(queryExistInviteId, NumberUtil.NUMBER_ZERO)) {
-            LogUtils.info(log, "邀请id不正确。请重新输入", session, bizUser.getPhone(), invitationCode);
-            return RespBodyUtils.failure("The invitation id is incorrect. Please re-enter it");
+            return RespBodyUtils.failure("OTP error, please re-enter");
         }
+        // 清除注册otp
+        redisClientBean.remove(appRegisterKey);
 
+        // 当前注册用户自己的邀请码
+        String selfId = FrameUtils.getRandomStrLen(NumberUtil.NUMBER_EIGHT);
+        bizUser.setSelfId(selfId);
+        bizUser.setLevel(level);
+        bizUser.setUsername(phone);
+        // 保存注册用户
         bizUserMapper.insertBizUser(bizUser);
-
-        return RespBodyUtils.success("registered successfully！");
+        return RespBodyUtils.success("Registered successfully");
     }
 
 
@@ -125,14 +166,12 @@ public class BizUserService {
      * @param dataSources 数据来源：app，h5
      */
     public RespBody login(String dataSources, BizUser userParam, HttpServletRequest request) {
-        //手机号码不能为空
         if (StringUtils.isBlank(userParam.getPhone())) {
-            LogUtils.info(log, "电话号码不能为空", userParam.getPhone());
-            return RespBodyUtils.failure("The phone number cannot be empty");
+            LogUtils.info(log, "登录手机号码不能为空", userParam.getPhone());
+            return RespBodyUtils.failure("Phone number can not be empty");
         }
-        //密码不能为空
         if (StringUtils.isBlank(userParam.getPassword())) {
-            LogUtils.info(log, "密码不能为空", userParam.getPhone());
+            LogUtils.info(log, "登录密码不能为空", userParam.getPhone());
             return RespBodyUtils.failure("The password cannot be empty");
         }
         try {
@@ -230,8 +269,8 @@ public class BizUserService {
             // 删除缓存信息
             redisClientBean.remove(appSidKey);
             redisClientBean.remove(appRefreshKey);
-            LogUtils.info(log, "退出成功！", sessionId);
-            return RespBodyUtils.success("Exit successfully！");
+            LogUtils.info(log, "退出成功", sessionId);
+            return RespBodyUtils.success("Exit successfully");
         } catch (Exception e) {
             LogUtils.error(log, "退出失败", e, sessionId);
             return RespBodyUtils.failure("Exit failure");
@@ -248,15 +287,15 @@ public class BizUserService {
     public RespBody<String> updatePassword(BizUser bizUser, BizUser user) {
         //电话不能为空
         if (StringUtils.isBlank(bizUser.getPhone())) {
-            LogUtils.info(log, "电话号码不能为空！", bizUser.getPhone());
-            return RespBodyUtils.failure("The phone number cannot be empty！");
+            LogUtils.info(log, "电话号码不能为空", bizUser.getPhone());
+            return RespBodyUtils.failure("The phone number cannot be empty");
         }
 
         //判定当前用户的手机号码是否为空，如果为空，则未登录，不需要校验手机号码，如果登录了，需要对比两个手机号码
         /*if (!StringUtils.isBlank(bizUser.getUserPhone())) {
             if (!bizUser.getPhone().equals(bizUser.getUserPhone())) {
-                LogUtils.info(log, "请输入当前注册的手机号码！", bizUser.getPhone());
-                return RespBodyUtils.failure("Local please enter the correct mobile phone number ！");
+                LogUtils.info(log, "请输入当前注册的手机号码", bizUser.getPhone());
+                return RespBodyUtils.failure("Local please enter the correct mobile phone number ");
             }
         }*/
 
@@ -264,13 +303,13 @@ public class BizUserService {
         // 修改密码
         int queryExistBizUser = bizUserMapper.queryExistBizUser(bizUser.getPhone());
         if (queryExistBizUser == NumberUtil.NUMBER_ZERO) {
-            LogUtils.info(log, "请输入正确的手机号！", bizUser.getPhone());
-            return RespBodyUtils.failure("Local please enter the correct mobile phone number ！");
+            LogUtils.info(log, "请输入正确的手机号", bizUser.getPhone());
+            return RespBodyUtils.failure("Local please enter the correct mobile phone number ");
         }
 
         if (StringUtils.isBlank(bizUser.getPassword())) {
-            LogUtils.info(log, "密码不能为空！", bizUser.getPhone());
-            return RespBodyUtils.failure("The password cannot be empty！");
+            LogUtils.info(log, "密码不能为空", bizUser.getPhone());
+            return RespBodyUtils.failure("The password cannot be empty");
         }
 
         //查询redis里面的OTP，校验通过，则注册成功
@@ -284,13 +323,13 @@ public class BizUserService {
 
         /*if (!Objects.equals(registerOTP, bizUser.getOTP())) {
             LogUtils.info(log, "OTP错误，请重新输入", bizUser.getPhone());
-            return RespBodyUtils.failure("OTP error, please re-enter！");
+            return RespBodyUtils.failure("OTP error, please re-enter");
         }*/
         redisClientBean.remove(appChPasswordKey);
         //验证正确之后修改密码
         bizUserMapper.updateUserInfo(bizUser);
-        LogUtils.info(log, "修改成功，请重新登录！", bizUser.getPhone());
-        return RespBodyUtils.success("Modified successfully, please log in again!");
+        LogUtils.info(log, "修改成功，请重新登录", bizUser.getPhone());
+        return RespBodyUtils.success("Modified successfully, please log in again");
     }
 
     /**
@@ -301,8 +340,8 @@ public class BizUserService {
      */
     public RespBody<UserVo> queryUserDetail(BizUser bizUser, HttpServletRequest request) {
         if (bizUser.getId() == NumberUtil.NUMBER_ZERO) {
-            LogUtils.info(log, "用户id不能为空！");
-            return RespBodyUtils.failure("The user id cannot be empty！");
+            LogUtils.info(log, "用户id不能为空");
+            return RespBodyUtils.failure("The user id cannot be empty");
         }
 
         UserVo userVO = new UserVo();
@@ -331,7 +370,7 @@ public class BizUserService {
                 LogUtils.error(log, "查询玩家详情异步处理登录后信息维护错误", e, userVO.getPhone());
             }
         });
-        return RespBodyUtils.success("Description Querying user details succeeded！", userVO);
+        return RespBodyUtils.success("Description Querying user details succeeded", userVO);
     }
 
 
@@ -344,13 +383,13 @@ public class BizUserService {
     @Transactional(rollbackFor = Exception.class)
     public RespBody updateBasicInfo(BizUser bizUser) {
         if (bizUser.getId() == NumberUtil.NUMBER_ZERO) {
-            LogUtils.info(log, "用户id不能为空！");
-            return RespBodyUtils.failure("The user id cannot be empty！");
+            LogUtils.info(log, "用户id不能为空");
+            return RespBodyUtils.failure("The user id cannot be empty");
         }
         //验证正确之后修改密码
         bizUserMapper.updateBasicInfo(bizUser);
-        LogUtils.info(log, "修改用户基础信息成功！");
-        return RespBodyUtils.success("Basic user information is modified successfully. Procedure！");
+        LogUtils.info(log, "修改用户基础信息成功");
+        return RespBodyUtils.success("Basic user information is modified successfully. Procedure");
     }
 
     /**
@@ -367,7 +406,7 @@ public class BizUserService {
             userRefreshJo.put("effectiveTime", System.currentTimeMillis() + (timeout * 1000));
             String userRefreshStr = userRefreshJo.toJSONString();
             redisClientBean.put(appRefreshKey, userRefreshStr);
-            return RespBodyUtils.success("Refresh successfully！");
+            return RespBodyUtils.success("Refresh successfully");
         } catch (Exception e) {
             LogUtils.error(log, "refresh会话失败", e, bizUser.getId(), sessionId);
             return RespBodyUtils.failure("Refresh failure");

@@ -38,17 +38,28 @@ public class BizUserController {
     }
 
     /**
+     * 获取注册otp
+     */
+    @ResponseBody
+    @PostMapping("/getRegisterOtp")
+    public RespBody getRegisterOtp(@RequestBody JSONObject params) {
+        try {
+            return bizUserService.getRegisterOtp(params);
+        } catch (Exception e) {
+            LogUtils.error(log, "获取注册otp失败", e, params);
+            return RespBodyUtils.failure("Failed to obtain registration otp");
+        }
+    }
+
+    /**
      * 注册玩家
-     *
-     * @param params
-     * @return
      */
     @ResponseBody
     @PostMapping("/register")
     public RespBody register(@RequestBody JSONObject params) {
-        BizUser javaObject = JSONObject.toJavaObject(params, BizUser.class);
+        BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
         try {
-            return bizUserService.saveBizUser(javaObject);
+            return bizUserService.registerUser(params, paramBean);
         } catch (Exception e) {
             LogUtils.error(log, "注册失败", e, params);
             return RespBodyUtils.failure("Registration failed");
@@ -63,10 +74,10 @@ public class BizUserController {
     @ResponseBody
     @PostMapping("/login")
     public RespBody login(@RequestBody JSONObject params, HttpServletRequest request) {
-        BizUser bizUser = JSONObject.toJavaObject(params, BizUser.class);
+        BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
         try {
             String dataSources = params.getString("dataSources");
-            return bizUserService.login(dataSources, bizUser, request);
+            return bizUserService.login(dataSources, paramBean, request);
         } catch (Exception e) {
             LogUtils.error(log, "登录失败", e, params);
             return RespBodyUtils.failure("Login failed");
@@ -83,9 +94,9 @@ public class BizUserController {
     @ResponseBody
     @GetMapping("/refresh")
     public RespBody refresh(@RequestHeader String sessionId, HttpServletRequest request) {
-        BizUser bizUser = (BizUser) request.getAttribute(FrameConstant.userKey);
+        BizUser paramBean = (BizUser) request.getAttribute(FrameConstant.userKey);
         try {
-            return bizUserService.refresh(bizUser, sessionId);
+            return bizUserService.refresh(paramBean, sessionId);
         } catch (Exception e) {
             LogUtils.error(log, "刷新失败", e, sessionId);
             return RespBodyUtils.failure("Refresh failed");
@@ -101,9 +112,9 @@ public class BizUserController {
     @ResponseBody
     @PostMapping("/logOut")
     public RespBody logOut(@RequestHeader String sessionId, HttpServletRequest request) {
-        BizUser bizUser = (BizUser) request.getAttribute(FrameConstant.userKey);
+        BizUser paramBean = (BizUser) request.getAttribute(FrameConstant.userKey);
         try {
-            return bizUserService.logOut(bizUser, sessionId);
+            return bizUserService.logOut(paramBean, sessionId);
         } catch (Exception e) {
             LogUtils.error(log, "退出失败", e, sessionId);
             return RespBodyUtils.failure("LogOut failed");
@@ -120,9 +131,9 @@ public class BizUserController {
     @PostMapping("/updatePassword")
     public RespBody updatePassword(@RequestBody JSONObject params, HttpServletRequest request) {
         BizUser user = (BizUser) request.getAttribute(FrameConstant.userKey);
-        BizUser bizUser = JSONObject.toJavaObject(params, BizUser.class);
+        BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
         try {
-            return bizUserService.updatePassword(bizUser, user);
+            return bizUserService.updatePassword(paramBean, user);
         } catch (Exception e) {
             LogUtils.error(log, "密码修改错误", e, params);
             return RespBodyUtils.failure("Incorrect password change");
