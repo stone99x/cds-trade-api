@@ -39,7 +39,8 @@ public class PojoAccessFilter extends BaseAccessFilter {
     private RedisClientBean redisClientBean;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest rawRequest, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest rawRequest, HttpServletResponse response,
+                                    FilterChain filterChain) throws ServletException, IOException {
         // 不能删除此行代码
         super.doFilterInternal(rawRequest, response, filterChain);
         XssHttpServletRequestWraper request = new XssHttpServletRequestWraper(rawRequest);
