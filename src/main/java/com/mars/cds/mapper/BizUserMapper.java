@@ -49,21 +49,7 @@ public interface BizUserMapper {
      */
     void updateUserInfo(BizUser bizUser);
 
-    /**
-     * 修改玩家登录ip
-     *
-     * @param bizUser
-     */
-    void updateUserLastLoginTime(BizUser bizUser);
-
-    void updateUserLastLoginIP(BizUser bizUser);
-
-    /**
-     * 修改用户最后一次登录时间和累计用户次数
-     *
-     * @param bizUser
-     */
-    void updateLoginCountAndLoginTime(BizUser bizUser);
+    void updateUserLastLoginInfo(BizUser bizUser);
 
     /**
      * 修改玩家在线状态
@@ -71,13 +57,6 @@ public interface BizUserMapper {
      * @param id
      */
     void updateOnlineStatus(Integer id);
-
-    /**
-     * 根据邀请码查询往下三级的余额
-     *
-     * @return
-     */
-    Long queryTeamBalance(@Param("selfId") String selfId);
 
     /**
      * 修改当前用户的余额

@@ -7,6 +7,7 @@ import com.mars.cds.service.BizUserService;
 import com.mars.cds.support.LogUtils;
 import com.mars.cds.support.RespBody;
 import com.mars.cds.support.RespBodyUtils;
+import com.mars.cds.vo.UserVo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +43,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/getRegisterOtp")
-    public RespBody getRegisterOtp(@RequestBody JSONObject params) {
+    public RespBody<String> getRegisterOtp(@RequestBody JSONObject params) {
         try {
             return bizUserService.getRegisterOtp(params);
         } catch (Exception e) {
@@ -56,7 +57,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/register")
-    public RespBody register(@RequestBody JSONObject params) {
+    public RespBody<String> register(@RequestBody JSONObject params) {
         BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
         try {
             return bizUserService.registerUser(params, paramBean);
@@ -73,7 +74,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/login")
-    public RespBody login(@RequestBody JSONObject params, HttpServletRequest request) {
+    public RespBody<UserVo> login(@RequestBody JSONObject params, HttpServletRequest request) {
         BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
         try {
             String dataSources = params.getString("dataSources");

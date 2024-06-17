@@ -88,53 +88,28 @@
         where phone = #{phone}
     </update>
 
-    <update id="updateUserLastLoginTime" parameterType="BizUser">
-        update biz_user
+    <update id="updateUserLastLoginInfo" parameterType="BizUser">
+        update biz_user t
         <set>
-            lastLoginTime = now(),
-            sessionId =#{sessionId},
-            loginCount = loginCount + 1,
-            <if test="onlineAppStatus != null">
-                onlineAppStatus = 1,
+            <if test="firstLoginTime != null and firstLoginTime != ''">
+                t.firstLoginTime=now(),
             </if>
-            <if test="onlineStatus != null">
-                onlineStatus = 1,
+            <if test="onlineH5Status==1">
+                t.onlineH5Status=1,
             </if>
+            <if test="onlineAppStatus==1">
+                t.onlineAppStatus=1,
+            </if>
+            t.ip = #{ip},
+            t.ipRegion = #{ipRegion},
+            t.lastLoginTime = now(),
         </set>
-        where id = #{id}
-    </update>
-
-    <update id="updateUserLastLoginIP" parameterType="BizUser">
-        update biz_user
-        set ip       = #{ip},
-            ipRegion = #{ipRegion}
-        where id = #{id};
-    </update>
-
-    <update id="updateLoginCountAndLoginTime">
-        update biz_user
-        <set>
-            loginCount = loginCount + 1,
-            lastLoginTime = now(),
-            <!--            <if test="ip != null and ip != '' ">-->
-            <!--                ip            = #{ip},-->
-            <!--            </if>-->
-            <!--            <if test="ipRegion != null and ipRegion != '' ">-->
-            <!--                ipRegion      = #{ipRegion},-->
-            <!--            </if>-->
-            <if test="onlineAppStatus != null">
-                onlineAppStatus = 1,
-            </if>
-            <if test="onlineStatus != null">
-                onlineStatus = 1,
-            </if>
-        </set>
-        where id = #{id}
+        where t.id = #{id};
     </update>
 
     <update id="updateOnlineStatus" parameterType="BizUser">
         update biz_user
-        set onlineStatus    = 2,
+        set onlineH5Status  = 2,
             onlineAppStatus = 2
         where id = #{id}
     </update>
@@ -258,7 +233,7 @@
                status,
                betRebateStatus,
                withdrawStatus,
-               onlineStatus,
+               onlineH5Status,
                createTime,
                updateTime,
                salary,

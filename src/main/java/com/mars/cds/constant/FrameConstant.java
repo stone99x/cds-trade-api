@@ -40,4 +40,8 @@ public class FrameConstant {
     public static final String otpCodeRegx = "^\\d{6}$";
     // otp过期时间
     public static final int otpExpired = 120;
+    public static final String ipv4Regx = "^\\d+\\.\\d+\\.\\d+\\.\\d+$";
+
+    public static final String sourceH5 = "h5";
+    public static final String sourceAPP = "app";
 }

@@ -8,7 +8,6 @@ import com.mars.cds.entity.BizIpRegion;
 import com.mars.cds.entity.BizIpRegionIPv6;
 import com.mars.cds.entity.BizUser;
 import com.mars.cds.entity.BizUserLoginLog;
-import com.mars.cds.mapper.BizConfigMapper;
 import com.mars.cds.mapper.BizUserMapper;
 import com.mars.cds.support.*;
 import com.mars.cds.vo.UserVo;
@@ -40,8 +39,6 @@ public class BizUserService {
     private BizIpRegionService bizIpRegionService;
     @Resource
     private BizIpRegionIPv6Service bizIpRegionIPv6Service;
-    @Resource
-    private BizConfigMapper bizConfigMapper;
     @Resource
     private BizOtpService bizOtpService;
 
@@ -81,7 +78,7 @@ public class BizUserService {
     }
 
     // 用户注册
-    public RespBody registerUser(JSONObject params, BizUser bizUser) {
+    public RespBody<String> registerUser(JSONObject params, BizUser bizUser) {
         if (StringUtils.isEmpty(bizUser.getPhone())) {
             LogUtils.info(log, "注册手机号码不能为空", bizUser.getPhone());
             return RespBodyUtils.failure("Phone number can not be empty");
@@ -120,11 +117,11 @@ public class BizUserService {
                 LogUtils.info(log, "邀请码不正确", phone, bizUser.getInviteId());
                 return RespBodyUtils.failure("Invalid invitation code");
             }
-            if (userInviteId.getStatus() != 1) {
+            if (userInviteId.getStatus() != NumberUtil.NUMBER_ONE) {
                 LogUtils.info(log, "邀请码不可用", phone, bizUser.getInviteId());
                 return RespBodyUtils.failure("Invitation code not available");
             }
-            level = userInviteId.getLevel() + 1;
+            level = userInviteId.getLevel() + NumberUtil.NUMBER_ONE;
         }
 
         //查询用户是否存在在, 通过电话号码进行判断
@@ -165,94 +162,103 @@ public class BizUserService {
      *
      * @param dataSources 数据来源：app，h5
      */
-    public RespBody login(String dataSources, BizUser userParam, HttpServletRequest request) {
+    public RespBody<UserVo> login(String dataSources, BizUser userParam, HttpServletRequest request) {
         if (StringUtils.isBlank(userParam.getPhone())) {
             LogUtils.info(log, "登录手机号码不能为空", userParam.getPhone());
             return RespBodyUtils.failure("Phone number can not be empty");
+        }
+        String phone = userParam.getPhone();
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "登录手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
         }
         if (StringUtils.isBlank(userParam.getPassword())) {
             LogUtils.info(log, "登录密码不能为空", userParam.getPhone());
             return RespBodyUtils.failure("The password cannot be empty");
         }
-        try {
-            //验证帐号密码是否正确
-            BizUser userInfo = bizUserMapper.queryLogin(userParam.getPhone(), userParam.getPassword());
-
-            if (Objects.isNull(userInfo)) {
-                LogUtils.info(log, "帐号密码不正确", userParam.getPhone());
-                return RespBodyUtils.failure("The account password is incorrect");
-            }
-
-            // 状态为1表示，可用；其他均不可以登录
-            if (userInfo.getStatus() != NumberUtil.NUMBER_ONE) {
-                LogUtils.info(log, "此帐号已被禁用", userParam.getPhone());
-                return RespBodyUtils.failure("This account has been disabled");
-            }
-
-            String sessionId = FrameUtils.getUuidString();
-
-            // 会话缓存key
-            String appSidKey = String.format(FrameConstant.appSidKey, sessionId);
-            String userInfoStr = JSONObject.toJSONString(userInfo);
-            redisClientBean.put(appSidKey, userInfoStr);
-
-            // 会话有效key
-            String appRefreshKey = String.format(FrameConstant.appRefreshKey, sessionId);
-            JSONObject userRefreshJo = new JSONObject();
-            userRefreshJo.put("id", userInfo.getId());
-            userRefreshJo.put("effectiveTime", System.currentTimeMillis() + (timeout * 1000));
-            String userRefreshStr = userRefreshJo.toJSONString();
-            redisClientBean.put(appRefreshKey, userRefreshStr);
-
-            // 记录会话集合
-            String appListKey = String.format(FrameConstant.appListKey, userInfo.getId());
-            BoundListOperations<String, String> userBoundList = redisClientBean.
-                    getRedisTemplate().boundListOps(appListKey);
-            userBoundList.rightPush(appSidKey);
-
-            //bizUserMapper.updateUserLastLoginTime(bizUserInfo);
-
-            CommonPool.submit(() -> {
-                try {
-                    // 修改用户最后一次登录时间,地址，ip
-                    String remoteAddrIp = FrameUtils.getRemoteAddr2(request);
-                    LogUtils.info(log, "登录玩家IP", userParam.getPhone(), remoteAddrIp);
-
-                    String city;
-                    if (remoteAddrIp.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
-                        // ipv4
-                        BizIpRegion bizIpRegion = bizIpRegionService.selectOneByIpNum(remoteAddrIp);
-                        city = bizIpRegion.getCity();
-                        LogUtils.info(log, "登录玩家IPv4", userParam.getPhone(), remoteAddrIp, city);
-                    } else {
-                        // ipv6
-                        BizIpRegionIPv6 bizIpRegion = bizIpRegionIPv6Service.selectOneByIpNum(remoteAddrIp);
-                        city = bizIpRegion.getCity();
-                        LogUtils.info(log, "登录玩家IPv6", userParam.getPhone(), remoteAddrIp, city);
-                    }
-
-                    // 更新用户登录信息
-                    BizUser updateUserInfo = BizUser.builder().id(userInfo.getId())
-                            .ip(remoteAddrIp).ipRegion(city).build();
-                    bizUserMapper.updateUserLastLoginIP(updateUserInfo);
-
-                    // 记录登录日志
-                    BizUserLoginLog userLoginLog = BizUserLoginLog.builder()
-                            .userId(userInfo.getId())
-                            .ip(remoteAddrIp)
-                            .ipRegion(city)
-                            .dataSources(dataSources)
-                            .build();
-                    bizUserMapper.insertUserLoginLog(userLoginLog);
-                } catch (Exception e) {
-                    LogUtils.error(log, "异步处理登录后信息维护错误", e, userParam.getPhone());
-                }
-            });
-            return RespBodyUtils.success("Login successfully", userInfo);
-        } catch (Exception e) {
-            LogUtils.error(log, "登录错误", e, userParam.getPhone());
-            return RespBodyUtils.failure("Login error");
+        int passwordLength = userParam.getPassword().length();
+        if (passwordLength < 6 || passwordLength > 18) {
+            LogUtils.info(log, "登录密码长度不正确", phone, passwordLength);
+            return RespBodyUtils.failure("The password length should be between 6 and 18 characters.");
         }
+        //验证帐号密码是否正确
+        BizUser userInfo = bizUserMapper.queryLogin(userParam.getPhone(), userParam.getPassword());
+
+        if (Objects.isNull(userInfo)) {
+            LogUtils.info(log, "帐号密码不正确", userParam.getPhone());
+            return RespBodyUtils.failure("The account password is incorrect");
+        }
+
+        // 状态为1表示，可用；其他均不可以登录
+        if (userInfo.getStatus() != NumberUtil.NUMBER_ONE || userInfo.getDel() != NumberUtil.NUMBER_ONE) {
+            LogUtils.info(log, "此帐号已被禁用", userParam.getPhone());
+            return RespBodyUtils.failure("This account has been disabled");
+        }
+
+        String sessionId = FrameUtils.getUuidString();
+
+        // 会话缓存key
+        String appSidKey = String.format(FrameConstant.appSidKey, sessionId);
+        String userInfoStr = JSONObject.toJSONString(userInfo);
+        redisClientBean.put(appSidKey, userInfoStr);
+
+        // 会话有效key
+        String appRefreshKey = String.format(FrameConstant.appRefreshKey, sessionId);
+        JSONObject userRefreshJo = new JSONObject();
+        userRefreshJo.put("id", userInfo.getId());
+        userRefreshJo.put("effectiveTime", System.currentTimeMillis() + (timeout * 1000));
+        String userRefreshStr = userRefreshJo.toJSONString();
+        redisClientBean.put(appRefreshKey, userRefreshStr);
+
+        // 记录会话集合
+        String appListKey = String.format(FrameConstant.appListKey, userInfo.getId());
+        BoundListOperations<String, String> userBoundList = redisClientBean.
+                getRedisTemplate().boundListOps(appListKey);
+        userBoundList.rightPush(appSidKey);
+
+        CommonPool.submit(() -> {
+            try {
+                String remoteAddrIp = FrameUtils.getRemoteAddr2(request);
+                LogUtils.info(log, "登录玩家IP", userParam.getPhone(), remoteAddrIp);
+
+                String city;
+                if (remoteAddrIp.matches(FrameConstant.ipv4Regx)) {
+                    // ipv4
+                    BizIpRegion bizIpRegion = bizIpRegionService.selectOneByIpNum(remoteAddrIp);
+                    city = bizIpRegion.getCity();
+                    LogUtils.info(log, "登录玩家IPv4", userParam.getPhone(), remoteAddrIp, city);
+                } else {
+                    // ipv6
+                    BizIpRegionIPv6 bizIpRegion = bizIpRegionIPv6Service.selectOneByIpNum(remoteAddrIp);
+                    city = bizIpRegion.getCity();
+                    LogUtils.info(log, "登录玩家IPv6", userParam.getPhone(), remoteAddrIp, city);
+                }
+
+                // 更新用户登录信息
+                BizUser updateUserInfo = BizUser.builder().id(userInfo.getId()).ip(remoteAddrIp)
+                        .ipRegion(city).firstLoginTime(userInfo.getFirstLoginTime()).build();
+                if (FrameConstant.sourceH5.equalsIgnoreCase(dataSources)) {
+                    updateUserInfo.setOnlineH5Status(NumberUtil.NUMBER_ONE);
+                } else {
+                    updateUserInfo.setOnlineH5Status(NumberUtil.NUMBER_ONE);
+                }
+                bizUserMapper.updateUserLastLoginInfo(updateUserInfo);
+
+                // 记录登录日志
+                BizUserLoginLog userLoginLog = BizUserLoginLog.builder()
+                        .userId(userInfo.getId())
+                        .ip(remoteAddrIp)
+                        .ipRegion(city)
+                        .dataSources(dataSources)
+                        .build();
+                bizUserMapper.insertUserLoginLog(userLoginLog);
+            } catch (Exception e) {
+                LogUtils.error(log, "异步处理登录后信息维护错误", e, userParam.getPhone());
+            }
+        });
+        UserVo userVo = UserVo.builder().sessionId(sessionId).build();
+        ReflectUtils.transform(userVo, userInfo);
+        return RespBodyUtils.success("Login successfully", userVo);
     }
 
     /**
@@ -269,6 +275,12 @@ public class BizUserService {
             // 删除缓存信息
             redisClientBean.remove(appSidKey);
             redisClientBean.remove(appRefreshKey);
+
+            // 删除集合中的元素keys
+            String appListKey = String.format(FrameConstant.appListKey, bizUser.getId());
+            BoundListOperations<String, String> userBoundList = redisClientBean.
+                    getRedisTemplate().boundListOps(appListKey);
+            userBoundList.remove(1, appSidKey);
             LogUtils.info(log, "退出成功", sessionId);
             return RespBodyUtils.success("Exit successfully");
         } catch (Exception e) {
@@ -364,7 +376,7 @@ public class BizUserService {
 //                    LogUtils.info(log, "查询玩家详情IPv6", userVO.getPhone(), remoteAddrIp, city);
                 }
 
-                bizUserMapper.updateUserLastLoginIP(BizUser.builder().id(userVO.getId())
+                bizUserMapper.updateUserLastLoginInfo(BizUser.builder().id(userVO.getId())
                         .ip(remoteAddrIp).ipRegion(city).build());
             } catch (Exception e) {
                 LogUtils.error(log, "查询玩家详情异步处理登录后信息维护错误", e, userVO.getPhone());
