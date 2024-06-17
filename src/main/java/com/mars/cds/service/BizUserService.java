@@ -240,7 +240,7 @@ public class BizUserService {
                 if (FrameConstant.sourceH5.equalsIgnoreCase(dataSources)) {
                     updateUserInfo.setOnlineH5Status(NumberUtil.NUMBER_ONE);
                 } else {
-                    updateUserInfo.setOnlineH5Status(NumberUtil.NUMBER_ONE);
+                    updateUserInfo.setOnlineAppStatus(NumberUtil.NUMBER_ONE);
                 }
                 bizUserMapper.updateUserLastLoginInfo(updateUserInfo);
 

@@ -91,7 +91,7 @@
     <update id="updateUserLastLoginInfo" parameterType="BizUser">
         update biz_user t
         <set>
-            <if test="firstLoginTime != null and firstLoginTime != ''">
+            <if test="firstLoginTime == null or firstLoginTime == ''">
                 t.firstLoginTime=now(),
             </if>
             <if test="onlineH5Status==1">
