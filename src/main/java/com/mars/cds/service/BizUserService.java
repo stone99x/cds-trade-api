@@ -70,7 +70,7 @@ public class BizUserService {
         }
         //随机生成6位验证码
         String code = FrameUtils.getRandomIntLen(6);
-        String content = String.format("Your registered otp is: %s, please do not give it to others to avoid losses", code);
+        String content = String.format("Your OTP is: %s, please do not give it to others to avoid losses", code);
         redisClientBean.put(appRegisterKey, code, FrameConstant.otpExpired);
         bizOtpService.sendOtp(phone, content);
         LogUtils.info(log, "注册OTP代码", phone, code);
@@ -219,19 +219,19 @@ public class BizUserService {
         CommonPool.submit(() -> {
             try {
                 String remoteAddrIp = FrameUtils.getRemoteAddr2(request);
-                LogUtils.info(log, "登录玩家IP", userParam.getPhone(), remoteAddrIp);
+                LogUtils.info(log, "登录用户IP", userParam.getPhone(), remoteAddrIp);
 
                 String city;
                 if (remoteAddrIp.matches(FrameConstant.ipv4Regx)) {
                     // ipv4
                     BizIpRegion bizIpRegion = bizIpRegionService.selectOneByIpNum(remoteAddrIp);
                     city = bizIpRegion.getCity();
-                    LogUtils.info(log, "登录玩家IPv4", userParam.getPhone(), remoteAddrIp, city);
+                    LogUtils.info(log, "登录用户IPv4", userParam.getPhone(), remoteAddrIp, city);
                 } else {
                     // ipv6
                     BizIpRegionIPv6 bizIpRegion = bizIpRegionIPv6Service.selectOneByIpNum(remoteAddrIp);
                     city = bizIpRegion.getCity();
-                    LogUtils.info(log, "登录玩家IPv6", userParam.getPhone(), remoteAddrIp, city);
+                    LogUtils.info(log, "登录用户IPv6", userParam.getPhone(), remoteAddrIp, city);
                 }
 
                 // 更新用户登录信息
@@ -289,59 +289,130 @@ public class BizUserService {
         }
     }
 
-    /**
-     * 重置密码
-     *
-     * @param bizUser
-     * @return
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public RespBody<String> updatePassword(BizUser bizUser, BizUser user) {
-        //电话不能为空
-        if (StringUtils.isBlank(bizUser.getPhone())) {
-            LogUtils.info(log, "电话号码不能为空", bizUser.getPhone());
-            return RespBodyUtils.failure("The phone number cannot be empty");
+    // 找回密码获取otp
+    public RespBody<String> getForgetPwdOtp(JSONObject params) {
+        String phone = params.getString("phone");
+        if (StringUtils.isEmpty(phone)) {
+            LogUtils.info(log, "找回密码手机号码不能为空");
+            return RespBodyUtils.failure("Mobile phone number cannot be empty");
         }
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "找回密码手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
+        }
+        // 先获取缓存是否存在，若存在等失效后，才可以发送
+        String appForgetPwdKey = String.format(FrameConstant.appForgetPwdKey, phone);
+        String forgetPwdOtpCode = redisClientBean.get(appForgetPwdKey);
+        if (!StringUtils.isEmpty(forgetPwdOtpCode)) {
+            LogUtils.info(log, "找回密码OTP已发送, 请稍后再试", phone, forgetPwdOtpCode);
+            return RespBodyUtils.failure("OTP has been sent, please try again later");
+        }
+        // 查询用户是否存在在, 通过电话号码进行判断
+        int queryExistBizUser = bizUserMapper.queryExistBizUser(phone);
 
-        //判定当前用户的手机号码是否为空，如果为空，则未登录，不需要校验手机号码，如果登录了，需要对比两个手机号码
-        /*if (!StringUtils.isBlank(bizUser.getUserPhone())) {
-            if (!bizUser.getPhone().equals(bizUser.getUserPhone())) {
-                LogUtils.info(log, "请输入当前注册的手机号码", bizUser.getPhone());
-                return RespBodyUtils.failure("Local please enter the correct mobile phone number ");
-            }
-        }*/
-
-        //查询电话号码是否存在，如果存在获取otp
-        // 修改密码
-        int queryExistBizUser = bizUserMapper.queryExistBizUser(bizUser.getPhone());
+        // 如果用户不正存在
         if (queryExistBizUser == NumberUtil.NUMBER_ZERO) {
-            LogUtils.info(log, "请输入正确的手机号", bizUser.getPhone());
-            return RespBodyUtils.failure("Local please enter the correct mobile phone number ");
+            LogUtils.info(log, "找回密码手机号码未注册", phone);
+            return RespBodyUtils.failure("This mobile number is not registered");
         }
+        // 随机生成6位验证码
+        String code = FrameUtils.getRandomIntLen(6);
+        String content = String.format("Your OTP is: %s, please do not give it to others to avoid losses", code);
+        redisClientBean.put(appForgetPwdKey, code, FrameConstant.otpExpired);
+        bizOtpService.sendOtp(phone, content);
+        LogUtils.info(log, "找回密码OTP代码", phone, code);
+        return RespBodyUtils.success("OTP sent successfully");
+    }
 
-        if (StringUtils.isBlank(bizUser.getPassword())) {
-            LogUtils.info(log, "密码不能为空", bizUser.getPhone());
+    // 验证找回密码获取otp
+    public RespBody<String> checkForgetPwdOtp(JSONObject params) {
+        String phone = params.getString("phone");
+        if (StringUtils.isEmpty(phone)) {
+            LogUtils.info(log, "验证找回密码手机号码不能为空");
+            return RespBodyUtils.failure("Mobile phone number cannot be empty");
+        }
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "验证找回密码手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
+        }
+        String otpCode = params.getString("otpCode");
+        if (StringUtils.isEmpty(otpCode)) {
+            LogUtils.info(log, "验证找回密码OTP不能为空", phone);
+            return RespBodyUtils.failure("The OTP cannot be empty");
+        }
+        if (!otpCode.matches(FrameConstant.otpCodeRegx)) {
+            LogUtils.info(log, "验证找回密码OTP格式不正确", phone);
+            return RespBodyUtils.failure("The OTP format is incorrect");
+        }
+        // 先获取缓存是否存在，若存在等失效后，才可以发送
+        String appForgetPwdKey = String.format(FrameConstant.appForgetPwdKey, phone);
+        String forgetPwdOtpCode = redisClientBean.get(appForgetPwdKey);
+        if (StringUtils.isEmpty(forgetPwdOtpCode)) {
+            LogUtils.info(log, "验证找回密码根据手机号码未查到otp", phone, forgetPwdOtpCode);
+            return RespBodyUtils.failure("OTP not found");
+        }
+        if (!otpCode.equals(forgetPwdOtpCode)) {
+            LogUtils.info(log, "验证找回密码otp不正确", phone, forgetPwdOtpCode);
+            return RespBodyUtils.failure("The OTP is incorrect");
+        }
+        // 查询用户是否存在在, 通过电话号码进行判断
+        int queryExistBizUser = bizUserMapper.queryExistBizUser(phone);
+
+        // 如果用户不正存在
+        if (queryExistBizUser == NumberUtil.NUMBER_ZERO) {
+            LogUtils.info(log, "验证找回密码手机号码未注册", phone);
+            return RespBodyUtils.failure("This mobile number is not registered");
+        }
+        redisClientBean.remove(appForgetPwdKey);
+
+        // 生成token
+        String token = FrameUtils.getUuidString();
+        String appForgetPwdTokenKey = String.format(FrameConstant.appForgetPwdTokenKey, phone);
+        redisClientBean.put(appForgetPwdTokenKey, token, FrameConstant.otpExpired);
+        return RespBodyUtils.success("OTP verification passed", token);
+    }
+
+    // 忘记密码重置(未登录)
+    public RespBody<String> forgetResetPassword(JSONObject params) {
+        String phone = params.getString("phone");
+        if (StringUtils.isEmpty(phone)) {
+            LogUtils.info(log, "忘记密码重置(未登录)手机号码不能为空");
+            return RespBodyUtils.failure("Mobile phone number cannot be empty");
+        }
+        if (!phone.matches(FrameConstant.phoneRegx)) {
+            LogUtils.info(log, "忘记密码重置(未登录)手机号码格式不正确", phone);
+            return RespBodyUtils.failure("The mobile number format is incorrect");
+        }
+        String password = params.getString("password");
+        if (StringUtils.isEmpty(password)) {
+            LogUtils.info(log, "忘记密码重置(未登录)密码不能为空", phone);
             return RespBodyUtils.failure("The password cannot be empty");
         }
-
-        //查询redis里面的OTP，校验通过，则注册成功
-        String appChPasswordKey = String.format(FrameConstant.appChPasswordKey, bizUser.getPhone());
-
-        String registerOTPValue = redisClientBean.get(appChPasswordKey);
-        String registerOTP = "";
-        if (StringUtils.isNotBlank(registerOTPValue)) {
-            registerOTP = registerOTPValue.substring(0, 6);
+        int passwordLength = password.length();
+        if (passwordLength < 6 || passwordLength > 18) {
+            LogUtils.info(log, "忘记密码重置(未登录)密码长度不正确", phone, passwordLength);
+            return RespBodyUtils.failure("The password length should be between 6 and 18 characters.");
+        }
+        String confirmPassword = params.getString("confirmPassword");
+        if (!password.equals(confirmPassword)) {
+            LogUtils.info(log, "忘记密码重置(未登录)确认密码与设置密码不相等", phone, passwordLength);
+            return RespBodyUtils.failure("Confirm passwords are not equal");
+        }
+        String token = params.getString("token");
+        String appForgetPwdTokenKey = String.format(FrameConstant.appForgetPwdTokenKey, phone);
+        String appForgetPwdTokenValue = redisClientBean.get(appForgetPwdTokenKey);
+        if (StringUtils.isEmpty(token) || StringUtils.isEmpty(appForgetPwdTokenValue)
+                || !token.equals(appForgetPwdTokenValue)) {
+            LogUtils.info(log, "忘记密码重置(未登录)token验证未通过", phone, token, appForgetPwdTokenValue);
+            return RespBodyUtils.failure("Authentication failed");
         }
 
-        /*if (!Objects.equals(registerOTP, bizUser.getOTP())) {
-            LogUtils.info(log, "OTP错误，请重新输入", bizUser.getPhone());
-            return RespBodyUtils.failure("OTP error, please re-enter");
-        }*/
-        redisClientBean.remove(appChPasswordKey);
+        redisClientBean.remove(appForgetPwdTokenKey);
         //验证正确之后修改密码
-        bizUserMapper.updateUserInfo(bizUser);
-        LogUtils.info(log, "修改成功，请重新登录", bizUser.getPhone());
-        return RespBodyUtils.success("Modified successfully, please log in again");
+        BizUser resetPasswordUser = BizUser.builder().phone(phone).password(password).build();
+        bizUserMapper.updatePasswordByPhone(resetPasswordUser);
+        LogUtils.info(log, "密码修改成功", phone);
+        return RespBodyUtils.success("Password reset complete");
     }
 
     /**
@@ -361,25 +432,25 @@ public class BizUserService {
             try {
                 // 修改用户最后一次登录时间,地址，ip
                 String remoteAddrIp = FrameUtils.getRemoteAddr2(request);
-//                LogUtils.info(log, "查询玩家详情IP", userVO.getPhone(), remoteAddrIp);
+//                LogUtils.info(log, "查询用户详情IP", userVO.getPhone(), remoteAddrIp);
 
                 String city;
                 if (remoteAddrIp.matches("^\\d+\\.\\d+\\.\\d+\\.\\d+$")) {
                     // ipv4
                     BizIpRegion bizIpRegion = bizIpRegionService.selectOneByIpNum(remoteAddrIp);
                     city = bizIpRegion.getCity();
-//                    LogUtils.info(log, "查询玩家详情IPv4", userVO.getPhone(), remoteAddrIp, city);
+//                    LogUtils.info(log, "查询用户详情IPv4", userVO.getPhone(), remoteAddrIp, city);
                 } else {
                     // ipv6
                     BizIpRegionIPv6 bizIpRegion = bizIpRegionIPv6Service.selectOneByIpNum(remoteAddrIp);
                     city = bizIpRegion.getCity();
-//                    LogUtils.info(log, "查询玩家详情IPv6", userVO.getPhone(), remoteAddrIp, city);
+//                    LogUtils.info(log, "查询用户详情IPv6", userVO.getPhone(), remoteAddrIp, city);
                 }
 
                 bizUserMapper.updateUserLastLoginInfo(BizUser.builder().id(userVO.getId())
                         .ip(remoteAddrIp).ipRegion(city).build());
             } catch (Exception e) {
-                LogUtils.error(log, "查询玩家详情异步处理登录后信息维护错误", e, userVO.getPhone());
+                LogUtils.error(log, "查询用户详情异步处理登录后信息维护错误", e, userVO.getPhone());
             }
         });
         return RespBodyUtils.success("Description Querying user details succeeded", userVO);

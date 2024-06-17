@@ -81,7 +81,7 @@
           and t.`password` = #{password}
     </select>
 
-    <update id="updateUserInfo" parameterType="BizUser">
+    <update id="updatePasswordByPhone" parameterType="BizUser">
         update biz_user
         set password   = #{password},
             updateTime = now()

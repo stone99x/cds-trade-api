@@ -32,6 +32,9 @@ public class PojoAccessFilter extends BaseAccessFilter {
             "/api/user/getRegisterOtp",
             "/api/user/register",
             "/api/user/login",
+            "/api/user/getForgetPwdOtp",
+            "/api/user/checkForgetPwdOtp",
+            "/api/user/forgetResetPassword",
             "/api/hotUpgrade/queryHotUpgrade",
     };
 

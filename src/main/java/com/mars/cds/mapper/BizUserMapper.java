@@ -11,7 +11,7 @@ import java.util.Map;
 public interface BizUserMapper {
 
     /**
-     * 根据电话号码查询玩家是否存在
+     * 根据电话号码查询用户是否存在
      *
      * @param phone
      * @return
@@ -27,7 +27,7 @@ public interface BizUserMapper {
     BizUser queryExistInviteId(@Param("inviteId") String inviteId);
 
     /**
-     * 保存玩家信息：注册
+     * 保存用户信息：注册
      *
      * @param bizUser
      */
@@ -35,24 +35,19 @@ public interface BizUserMapper {
 
     /**
      * 查询登录信息是否正确
-     *
-     * @param phone
-     * @param password
      */
     BizUser queryLogin(@Param("phone") String phone,
                        @Param("password") String password);
 
     /**
-     * 修改玩家密码
-     *
-     * @param bizUser
+     * 根据手机号重置用户密码
      */
-    void updateUserInfo(BizUser bizUser);
+    void updatePasswordByPhone(BizUser bizUser);
 
     void updateUserLastLoginInfo(BizUser bizUser);
 
     /**
-     * 修改玩家在线状态
+     * 修改用户在线状态
      *
      * @param id
      */

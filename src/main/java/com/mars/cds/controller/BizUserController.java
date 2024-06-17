@@ -16,7 +16,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * 玩家登录注册操作
+ * 用户登录注册操作
  */
 @RequestMapping("/api/user")
 @RestController
@@ -53,7 +53,7 @@ public class BizUserController {
     }
 
     /**
-     * 注册玩家
+     * 注册用户
      */
     @ResponseBody
     @PostMapping("/register")
@@ -123,21 +123,44 @@ public class BizUserController {
     }
 
     /**
-     * 修改密码
-     *
-     * @param params
-     * @return
+     * 忘记密码获取otp
      */
     @ResponseBody
-    @PostMapping("/updatePassword")
-    public RespBody updatePassword(@RequestBody JSONObject params, HttpServletRequest request) {
-        BizUser user = (BizUser) request.getAttribute(FrameConstant.userKey);
-        BizUser paramBean = JSONObject.toJavaObject(params, BizUser.class);
+    @PostMapping("/getForgetPwdOtp")
+    public RespBody<String> getForgetPwdOtp(@RequestBody JSONObject params) {
         try {
-            return bizUserService.updatePassword(paramBean, user);
+            return bizUserService.getForgetPwdOtp(params);
         } catch (Exception e) {
-            LogUtils.error(log, "密码修改错误", e, params);
-            return RespBodyUtils.failure("Incorrect password change");
+            LogUtils.error(log, "忘记密码获取otp失败", e, params);
+            return RespBodyUtils.failure("Failed to obtain otp");
+        }
+    }
+
+    /**
+     * 验证忘记密码获取otp
+     */
+    @ResponseBody
+    @PostMapping("/checkForgetPwdOtp")
+    public RespBody<String> checkForgetPwdOtp(@RequestBody JSONObject params) {
+        try {
+            return bizUserService.checkForgetPwdOtp(params);
+        } catch (Exception e) {
+            LogUtils.error(log, "验证忘记密码获取otp失败", e, params);
+            return RespBodyUtils.failure("Failed to verify OTP");
+        }
+    }
+
+    /**
+     * 忘记密码重置(未登录)
+     */
+    @ResponseBody
+    @PostMapping("/forgetResetPassword")
+    public RespBody forgetResetPassword(@RequestBody JSONObject params) {
+        try {
+            return bizUserService.forgetResetPassword(params);
+        } catch (Exception e) {
+            LogUtils.error(log, "忘记密码重置(未登录)错误", e, params);
+            return RespBodyUtils.failure("Password reset failed");
         }
     }
 

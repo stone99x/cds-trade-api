@@ -9,7 +9,8 @@ public class FrameConstant {
     public static final String appRefreshKey = "app.rfh.%s";
     public static final String appListKey = "app.list.%s";
     public static final String appRegisterKey = "app.reg.%s";
-    public static final String appChPasswordKey = "app.chp.%s";
+    public static final String appForgetPwdKey = "app.fgt.%s";
+    public static final String appForgetPwdTokenKey = "app.fgt-t.%s";
     public static final String sessionIdKey = "sessionId";
 
     public static final String dfs = "yyyy-MM-dd";
