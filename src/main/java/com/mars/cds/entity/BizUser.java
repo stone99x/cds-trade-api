@@ -25,10 +25,6 @@ public class BizUser implements Serializable {
      */
     private int id;
     /**
-     * 用户名
-     */
-    private String username;
-    /**
      * 手机号
      */
     private String phone;
@@ -52,6 +48,42 @@ public class BizUser implements Serializable {
      * 余额，单位：元
      */
     private BigDecimal balance;
+    /**
+     * 交易密码
+     */
+    private String pin;
+    /**
+     * 用户名
+     */
+    private String username;
+    /**
+     * 邮箱
+     */
+    private String email;
+    /**
+     * 飞机账号
+     */
+    private String telegram;
+    /**
+     * 地址
+     */
+    private String address;
+    /**
+     * aadhar正面
+     */
+    private String aadharFront;
+    /**
+     * aadhar反面
+     */
+    private String aadharReverse;
+    /**
+     * pan图片
+     */
+    private String panUrl;
+    /**
+     * 头像
+     */
+    private String avatar;
     /**
      * 第一次登录时间
      */

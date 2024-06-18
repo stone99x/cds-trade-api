@@ -150,7 +150,6 @@ public class BizUserService {
         String selfId = FrameUtils.getRandomStrLen(NumberUtil.NUMBER_EIGHT);
         bizUser.setSelfId(selfId);
         bizUser.setLevel(level);
-        bizUser.setUsername(phone);
         // 保存注册用户
         bizUserMapper.insertBizUser(bizUser);
         return RespBodyUtils.success("Registered successfully");

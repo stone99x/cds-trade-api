@@ -51,19 +51,25 @@
 
     <insert id="insertBizUser" keyColumn="id" keyProperty="id" parameterType="BizUser"
             useGeneratedKeys="true">
-        insert into biz_user(`username`, `phone`, `password`, `selfId`, `inviteId`, `level`)
-            value (#{username}, #{phone}, #{password}, #{selfId}, #{inviteId}, #{level})
+        insert into biz_user(`phone`, `password`, `selfId`, `inviteId`, `level`)
+            value (#{phone}, #{password}, #{selfId}, #{inviteId}, #{level})
     </insert>
 
     <select id="queryLogin" resultType="BizUser">
         select t.`id`,
-               t.`username`,
                t.`phone`,
-               t.`password`,
                t.`selfId`,
                t.`inviteId`,
                t.`level`,
                t.`balance`,
+               t.`username`,
+               t.`email`,
+               t.`telegram`,
+               t.`address`,
+               t.`aadharFront`,
+               t.`aadharReverse`,
+               t.`panUrl`,
+               t.`avatar`,
                t.`firstLoginTime`,
                t.`lastLoginTime`,
                t.`ip`,
@@ -143,37 +149,11 @@
         where id = #{id}
     </update>
 
-    <select id="queryBalanceAndSelfId" resultType="BizUser">
-        select id,
-               balance,
-               selfId,
-               withdrawStatus,
-               teamBalance,
-               phone,
-               username,
-               inviteId,
-               scorePool,
-               scoreMultiple,
-               giveAmount,
-               giveMultiple
-        from biz_user
-        where id = #{userId}
-    </select>
-
     <insert id="insertUserLoginLog" keyColumn="id" keyProperty="id"
             parameterType="BizUserLoginLog" useGeneratedKeys="true">
         insert into biz_user_login_log (userId, ip, ipRegion, loginTime, dataSources)
         values (#{userId}, #{ip}, #{ipRegion}, now(), #{dataSources})
     </insert>
-
-    <update id="updateBalanceInfo" parameterType="BizUser">
-        UPDATE biz_user t
-        SET t.balance=#{balance},
-            t.betAmount=#{betAmount},
-            t.scorePool=t.scorePool + #{scorePool},
-            t.updateTime=NOW()
-        WHERE t.id = #{id}
-    </update>
 
     <select id="queryUserDetail" resultType="BizUser">
         select
@@ -181,14 +161,6 @@
         from biz_user
         where id = #{id}
     </select>
-
-    <select id="queryUserDetailById" resultType="BizUser">
-        select
-        <include refid="Base_Column_List"/>
-        from biz_user
-        where id = #{id}
-    </select>
-
 
     <select id="queryBalanceInfo" resultType="BizUser">
         select t.id, balance, betAmount, betRebateStatus, inviteId

@@ -34,4 +34,8 @@ public class UserVo implements Serializable {
      * 余额，单位：元
      */
     private BigDecimal balance;
+    /**
+     * 头像
+     */
+    private String avatar;
 }

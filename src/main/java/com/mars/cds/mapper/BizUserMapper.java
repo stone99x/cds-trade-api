@@ -61,21 +61,6 @@ public interface BizUserMapper {
     void updateBalance(BizUser build);
 
     /**
-     * 根据userId查询余额
-     *
-     * @param userId
-     * @return
-     */
-    BizUser queryBalanceAndSelfId(Integer userId);
-
-    /**
-     * 仅修改用户余额相关
-     */
-    void updateBalanceInfo(BizUser bizUser);
-
-    BizUser queryUserDetailById(BizUser bizUser);
-
-    /**
      * 查询用户余额相关
      */
     BizUser queryBalanceInfo(int userId);
