@@ -2,39 +2,36 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.mars.cds.mapper.BizUserMapper">
-    <sql id="Base_Column_List">
-        id
+
+    <sql id="base_filed_all">
+        t
+        .
+        `id`
         ,
-        username,
-        phone,
-        `password`,
-        selfId,
-        inviteId,
-        balance,
-        teamBalance,
-        ifnull(teamNumber, 0) as teamNumber,
-        betAmount,
-        teamBetAmount,
-        firstLoginTime,
-        lastLoginTime,
-        ip,
-        ipRegion,
-        `type`,
-        `status`,
-        createTime,
-        updateTime,
-        salary,
-        profilePicture,
-        sex,
-        remarkId,
-        firstRecharge,
-        serviceUrl,
-        serviceUrlWs,
-        levelNumber,
-        userProperty,
-        firstRechargeSendStatus,
-        addContactStatus,
-        promoterCode
+        t.`phone`,
+        t.`selfId`,
+        t.`inviteId`,
+        t.`level`,
+        t.`balance`,
+        t.`username`,
+        t.`email`,
+        t.`telegram`,
+        t.`address`,
+        t.`aadharFront`,
+        t.`aadharReverse`,
+        t.`panUrl`,
+        t.`avatar`,
+        t.`firstLoginTime`,
+        t.`lastLoginTime`,
+        t.`ip`,
+        t.`ipRegion`,
+        t.`status`,
+        t.`onlineH5Status`,
+        t.`onlineAppStatus`,
+        t.`remark`,
+        t.`withdrawStatus`,
+        t.`del`,
+        t.`createTime`
     </sql>
 
     <select id="queryExistBizUser" parameterType="string" resultType="int">
@@ -56,35 +53,11 @@
     </insert>
 
     <select id="queryLogin" resultType="BizUser">
-        select t.`id`,
-               t.`phone`,
-               t.`selfId`,
-               t.`inviteId`,
-               t.`level`,
-               t.`balance`,
-               t.`username`,
-               t.`email`,
-               t.`telegram`,
-               t.`address`,
-               t.`aadharFront`,
-               t.`aadharReverse`,
-               t.`panUrl`,
-               t.`avatar`,
-               t.`firstLoginTime`,
-               t.`lastLoginTime`,
-               t.`ip`,
-               t.`ipRegion`,
-               t.`status`,
-               t.`onlineH5Status`,
-               t.`onlineAppStatus`,
-               t.`remark`,
-               t.`withdrawStatus`,
-               t.`del`,
-               t.`createTime`,
-               t.`updateTime`
+        select
+        <include refid="base_filed_all"/>
         from `biz_user` t
         where t.`phone` = #{phone}
-          and t.`password` = #{password}
+        and t.`password` = #{password}
     </select>
 
     <update id="updatePasswordByPhone" parameterType="BizUser">
@@ -120,46 +93,17 @@
         where id = #{id}
     </update>
 
-    <select id="queryTeamBalance" resultType="java.lang.Long">
-        SET SESSION group_concat_max_len = 1000000;
-        SELECT sum(T3.balance)
-        FROM (SELECT @codes as _ids,
-                     (SELECT @codes := GROUP_CONCAT(selfId)
-                      FROM biz_user
-                      WHERE FIND_IN_SET(inviteId, @codes)) as T1,
-                     @l := @l + 1                          as level_
-              FROM biz_user,
-                  (SELECT @codes := #{selfId}, @l := 0) T4
-              WHERE @codes IS NOT NULL) T2,
-             biz_user T3
-        WHERE FIND_IN_SET(T3.selfId, T2._ids)
-          and T2.level_ in (1, 2, 3, 4)
-    </select>
-
-    <update id="updateBalance">
-        update biz_user
-        set balance = #{balance},
-        <if test="scorePool != null and scorePool != 0">
-            scorePool = scorePool - #{scorePool},
-        </if>
-        <if test="giveAmount != null and giveAmount != 0">
-            giveAmount = giveAmount - #{giveAmount},
-        </if>
-        updateTime = now()
-        where id = #{id}
-    </update>
-
     <insert id="insertUserLoginLog" keyColumn="id" keyProperty="id"
             parameterType="BizUserLoginLog" useGeneratedKeys="true">
         insert into biz_user_login_log (userId, ip, ipRegion, loginTime, dataSources)
         values (#{userId}, #{ip}, #{ipRegion}, now(), #{dataSources})
     </insert>
 
-    <select id="queryUserDetail" resultType="BizUser">
+    <select id="queryUserDetailById" parameterType="int" resultType="BizUser">
         select
-        <include refid="Base_Column_List"/>
-        from biz_user
-        where id = #{id}
+        <include refid="base_filed_all"/>
+        from biz_user t
+        where t.`id` = #{userId}
     </select>
 
     <select id="queryBalanceInfo" resultType="BizUser">
@@ -185,98 +129,6 @@
         where id = #{id}
     </update>
 
-    <select id="queryBalanceBySelfId" resultType="BizUser">
-        select id,
-               username,
-               phone,
-               password,
-               selfId,
-               inviteId,
-               balance,
-               teamBalance,
-               teamNumber,
-               betAmount,
-               teamBetAmount,
-               firstLoginTime,
-               lastLoginTime,
-               ip,
-               ipRegion,
-               type,
-               status,
-               betRebateStatus,
-               withdrawStatus,
-               onlineH5Status,
-               createTime,
-               updateTime,
-               salary,
-               profilePicture,
-               sex,
-               remark,
-               firstRecharge,
-               userProperty
-        from biz_user
-        where selfId = #{inviteId}
-    </select>
-
-    <update id="updateTeamLevelNumber">
-        update biz_user
-        set levelNumber = #{levelNumber},
-            remark      = #{remark},
-            serviceUrl  = #{serviceUrl},
-            updateTime  = now()
-        where id = #{id};
-    </update>
-
-    <update id="updateTeamNumber">
-        update biz_user
-        set teamNumber = teamNumber + 1,
-            updateTime = now()
-        where id = #{id};
-    </update>
-
-
-    <select id="queryFatherUserInfo" resultType="Map">
-        select remark, serviceUrl
-        from biz_user
-        where selfId = #{fatherInviteId}
-    </select>
-
-    <update id="updateTeamAmountInfo">
-        update biz_user t
-        set t.teamBalance   = t.teamBalance + #{teamBalance},
-            t.teamBetAmount = t.teamBetAmount + #{teamBetAmount},
-            t.updateTime    = now()
-        where t.id = #{id};
-    </update>
-
-    <update id="updateTeamRecharge">
-        update biz_user t
-        set t.teamBalance = t.teamBalance + #{teamBalance},
-            t.updateTime  = now()
-        where t.id = #{id};
-    </update>
-
-    <update id="updateTeamWithdraw">
-        update biz_user t
-        set t.teamBalance = t.teamBalance - #{teamBalance},
-            t.updateTime  = now()
-        where t.id = #{id};
-    </update>
-
-    <update id="updateRechargeSendStatus">
-        update biz_user t
-        set t.firstRechargeSendStatus = 1,
-            t.updateTime              = now()
-        where t.id = #{id}
-    </update>
-
-    <update id="updateAddContactStatus">
-        update biz_user t
-        set t.addContactStatus = 1,
-            t.updateTime       = now()
-        where t.id = #{id}
-    </update>
-
     <update id="updateUserBalanceBySign">
         update biz_user t
         set t.balance    = t.balance + #{balance},
@@ -298,11 +150,5 @@
             updateTime = now()
         where id = #{id}
     </update>
-
-    <select id="queryUserRemarkId" resultType="java.lang.Integer">
-        select remarkId
-        from biz_user
-        where selfId = #{selfId}
-    </select>
 
 </mapper>

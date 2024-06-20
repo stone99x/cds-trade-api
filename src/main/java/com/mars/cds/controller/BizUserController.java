@@ -29,8 +29,6 @@ public class BizUserController {
 
     /**
      * 检查会话是否有效
-     *
-     * @return
      */
     @ResponseBody
     @PostMapping("/checkSessionId")
@@ -43,7 +41,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/getRegisterOtp")
-    public RespBody<String> getRegisterOtp(@RequestBody JSONObject params) {
+    public RespBody<Integer> getRegisterOtp(@RequestBody JSONObject params) {
         try {
             return bizUserService.getRegisterOtp(params);
         } catch (Exception e) {
@@ -69,8 +67,6 @@ public class BizUserController {
 
     /**
      * 登录
-     *
-     * @return
      */
     @ResponseBody
     @PostMapping("/login")
@@ -87,10 +83,6 @@ public class BizUserController {
 
     /**
      * 保持在线状态
-     *
-     * @param sessionId
-     * @param request
-     * @return
      */
     @ResponseBody
     @GetMapping("/refresh")
@@ -106,13 +98,10 @@ public class BizUserController {
 
     /**
      * 退出登录
-     *
-     * @param sessionId
-     * @return
      */
     @ResponseBody
     @PostMapping("/logOut")
-    public RespBody logOut(@RequestHeader String sessionId, HttpServletRequest request) {
+    public RespBody<String> logOut(@RequestHeader String sessionId, HttpServletRequest request) {
         BizUser paramBean = (BizUser) request.getAttribute(FrameConstant.userKey);
         try {
             return bizUserService.logOut(paramBean, sessionId);
@@ -127,7 +116,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/getForgetPwdOtp")
-    public RespBody<String> getForgetPwdOtp(@RequestBody JSONObject params) {
+    public RespBody<Integer> getForgetPwdOtp(@RequestBody JSONObject params) {
         try {
             return bizUserService.getForgetPwdOtp(params);
         } catch (Exception e) {
@@ -155,7 +144,7 @@ public class BizUserController {
      */
     @ResponseBody
     @PostMapping("/forgetResetPassword")
-    public RespBody forgetResetPassword(@RequestBody JSONObject params) {
+    public RespBody<String> forgetResetPassword(@RequestBody JSONObject params) {
         try {
             return bizUserService.forgetResetPassword(params);
         } catch (Exception e) {
@@ -164,4 +153,18 @@ public class BizUserController {
         }
     }
 
+    /**
+     * 查询用户信息
+     */
+    @ResponseBody
+    @PostMapping("/queryUserDetail")
+    public RespBody<UserVo> queryUserDetail(@RequestHeader String sessionId, HttpServletRequest request) {
+        BizUser paramBean = (BizUser) request.getAttribute(FrameConstant.userKey);
+        try {
+            return bizUserService.queryUserDetail(sessionId, paramBean);
+        } catch (Exception e) {
+            LogUtils.error(log, "忘记密码重置(未登录)错误", e, sessionId);
+            return RespBodyUtils.failure("Query user info failed");
+        }
+    }
 }

@@ -42,6 +42,9 @@ public class FrameConstant {
     // otp过期时间
     public static final int otpExpired = 120;
     public static final String ipv4Regx = "^\\d+\\.\\d+\\.\\d+\\.\\d+$";
+    public static final String passwordRegx = "^\\S{6,18}$";
+    public static final String pinRegx = "^\\d{4}$";
+    public static final String inviteRegx = "^[a-zA-Z0-9]{8}$";
 
     public static final String sourceH5 = "h5";
     public static final String sourceAPP = "app";
