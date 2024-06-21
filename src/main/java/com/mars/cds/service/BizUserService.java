@@ -60,7 +60,7 @@ public class BizUserService {
             long et = System.currentTimeMillis();
             long st = Long.parseLong(registerOtpCode.substring(6));
             int sec = (FrameConstant.otpExpired - (int) ((et - st) / 1000)); // 剩余有效秒数
-            LogUtils.info(log, "注册时OTP已发送, 请稍后再试", phone, registerOtpCode);
+            LogUtils.info(log, "注册时OTP已发送, 请稍后再试", phone, registerOtpCode.substring(6));
             return RespBodyUtils.success("OTP sent successfully", sec);
         }
         //查询用户是否存在在, 通过电话号码进行判断
@@ -316,7 +316,7 @@ public class BizUserService {
             long et = System.currentTimeMillis();
             long st = Long.parseLong(forgetPwdOtpCode.substring(6));
             int sec = (FrameConstant.otpExpired - (int) ((et - st) / 1000)); // 剩余有效秒数
-            LogUtils.info(log, "找回密码OTP已发送, 请稍后再试", phone, forgetPwdOtpCode);
+            LogUtils.info(log, "找回密码OTP已发送, 请稍后再试", phone, forgetPwdOtpCode.substring(6));
             return RespBodyUtils.success("OTP sent successfully", sec);
         }
         // 查询用户是否存在在, 通过电话号码进行判断
@@ -330,7 +330,7 @@ public class BizUserService {
         // 随机生成6位验证码
         String code = FrameUtils.getRandomIntLen(6);
         String content = String.format("Your OTP is: %s, please do not give it to others to avoid losses", code);
-        redisClientBean.put(appForgetPwdKey, code, FrameConstant.otpExpired);
+        redisClientBean.put(appForgetPwdKey, String.format("%s%s", code, System.currentTimeMillis()), FrameConstant.otpExpired);
         bizOtpService.sendOtp(phone, content);
         LogUtils.info(log, "找回密码OTP代码", phone, code);
         return RespBodyUtils.success("OTP sent successfully", FrameConstant.otpExpired);
@@ -360,7 +360,7 @@ public class BizUserService {
         String appForgetPwdKey = String.format(FrameConstant.appForgetPwdKey, phone);
         String forgetPwdOtpCode = redisClientBean.get(appForgetPwdKey);
         if (StringUtils.isEmpty(forgetPwdOtpCode)) {
-            LogUtils.info(log, "验证找回密码根据手机号码未查到otp", phone, otpCode, forgetPwdOtpCode);
+            LogUtils.info(log, "验证找回密码根据手机号码未查到otp", phone, otpCode);
             return RespBodyUtils.failure("OTP not found");
         }
         String realOtp = forgetPwdOtpCode.substring(0, 6);
