@@ -45,6 +45,8 @@ public class FrameConstant {
     public static final String passwordRegx = "^\\S{6,18}$";
     public static final String pinRegx = "^\\d{4}$";
     public static final String inviteRegx = "^[a-zA-Z0-9]{8}$";
+    public static final String ifscRegx = "^[A-Z]{4}0[A-Z0-9]{6}$";
+    public static final String bankCardRegx = "^\\d{12,32}$";
 
     public static final String sourceH5 = "h5";
     public static final String sourceAPP = "app";

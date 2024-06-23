@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mars.cds.mapper.BizBankCardMapper">
+
+    <insert id="saveBankCard" parameterType="com.mars.cds.vo.BankCardVo"
+            keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO `biz_bank_card`(`userId`, `payee`, `bankIfsc`, `cardNumber`)
+        VALUES (#{userId}, #{payee}, #{bankIfsc}, #{cardNumber});
+    </insert>
+
+    <select id="queryExistBankIfsc" resultType="int" parameterType="com.mars.cds.vo.BankCardVo">
+        select count(1)
+        from `biz_bank_card` t
+        where t.`userId` = #{userId}
+          and t.`bankIfsc` = #{bankIfsc}
+          and t.`del` = 1;
+    </select>
+
+    <select id="queryExistCardNumber" resultType="int" parameterType="com.mars.cds.vo.BankCardVo">
+        select count(1)
+        from `biz_bank_card` t
+        where t.`userId` = #{userId}
+          and t.`cardNumber` = #{cardNumber}
+          and t.`del` = 1;
+    </select>
+
+    <select id="queryBankCardDefault" resultType="com.mars.cds.vo.BankCardVo" parameterType="int">
+        select `id`,
+               `userId`,
+               `payee`,
+               `bankIfsc`,
+               `cardNumber`,
+               `priority`
+        from `biz_bank_card` t
+        where t.`userId` = #{userId}
+          and t.`priority` = 1
+          and t.`del` = 1;
+    </select>
+
+    <update id="updateBankCardDefault" parameterType="BizBankCard">
+        update `biz_bank_card` t
+        set t.`priority`=1,
+            t.`updateTie`=now()
+        where t.`id` = #{id}
+          and t.`userId` = #{userId}
+          and t.`del` = 1;
+
+        update `biz_bank_card` t
+        set t.`priority`=2,
+            t.`updateTie`=now()
+        where t.`id` not in (#{id})
+          and t.`userId` = #{userId}
+          and t.`del` = 1;
+    </update>
+
+    <select id="queryBankCardList" resultType="com.mars.cds.vo.BankCardVo" parameterType="int">
+        SELECT `id`,
+               `userId`,
+               `payee`,
+               `bankIfsc`,
+               `cardNumber`,
+               `priority`
+        FROM `biz_bank_card` t
+        where t.`userId` = #{userId}
+          and t.`del` = 1;
+    </select>
+
+
+    <update id="updateBankCard" parameterType="BizBankCard">
+        update `biz_bank_card` t
+        set t.`payee`=#{payee},
+            t.`bankIfsc`=#{bankIfsc},
+            t.`cardNumber`=#{cardNumber},
+            t.`updateTie`=now()
+        where t.`id` = #{id}
+          and t.`userId` = #{userId}
+          and t.`del` = 1;
+    </update>
+
+    <update id="deleteBackCard" parameterType="BizBankCard">
+        update `biz_bank_card` t
+        set t.`del`=2,
+            t.`updateTie`=now()
+        where t.`id` = #{id}
+          and t.`userId` = #{userId}
+    </update>
+
+</mapper>

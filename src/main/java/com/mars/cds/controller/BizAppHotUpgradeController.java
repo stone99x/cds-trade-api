@@ -26,7 +26,6 @@ public class BizAppHotUpgradeController {
     /**
      * 查询app热更记录
      */
-
     @ResponseBody
     @PostMapping("/queryHotUpgrade")
     public RespBody<JSONObject> queryHotUpgrade() {
