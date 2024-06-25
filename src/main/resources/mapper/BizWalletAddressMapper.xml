@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mars.cds.mapper.BizWalletAddressMapper">
+
+    <insert id="saveWalletAddress" parameterType="BizWalletAddress">
+        insert into `biz_wallet_address`(`userId`, `networkId`, `address`)
+        values (#{userId}, #{networkId}, #{address})
+    </insert>
+
+
+    <select id="queryIsExistWallet" resultType="int" parameterType="string">
+        select count(1)
+        from `biz_wallet_address` t
+        where t.`address` = #{address}
+          and t.`del` = 1;
+    </select>
+
+    <select id="queryWalletAddressList" resultType="com.mars.cds.vo.WalletAddressVo" parameterType="int">
+        select `id`,
+               `userId`,
+               `networkId`,
+               `address`
+        from `biz_wallet_address` t
+        where t.`userId` = #{userId}
+          and t.`del` = 1;
+    </select>
+
+    <update id="deleteWalletAddress" parameterType="BizWalletAddress">
+        update `biz_wallet_address` t
+        set t.`del`=2
+        where t.`id` = #{id}
+          and t.`userId` = #{userId};
+    </update>
+
+</mapper>
