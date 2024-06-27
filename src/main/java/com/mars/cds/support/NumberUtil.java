@@ -9,6 +9,8 @@ public class NumberUtil implements Serializable {
 
     private static final long serialVersionUID = -6502110214526541519L;
 
+    public static final Integer NUMBER_ONE_NEGATE = -1;
+
     public static final Integer NUMBER_ZERO = 0;
 
     public static final Integer NUMBER_ONE = 1;

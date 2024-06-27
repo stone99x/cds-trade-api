@@ -86,7 +86,7 @@
         where t.id = #{id};
     </update>
 
-    <update id="updateOnlineStatus" parameterType="BizUser">
+    <update id="updateOfflineStatus" parameterType="BizUser">
         update biz_user
         set onlineH5Status  = 2,
             onlineAppStatus = 2
@@ -106,11 +106,11 @@
         where t.`id` = #{userId}
     </select>
 
-    <select id="queryBalanceInfo" resultType="BizUser">
-        select t.id, balance, betAmount, betRebateStatus, inviteId
+    <select id="queryUserDetailByIdLock" parameterType="int" resultType="BizUser">
+        select
+        <include refid="base_filed_all"/>
         from biz_user t
-        where id = #{userId} for
-            update;
+        where t.`id` = #{userId} for update ;
     </select>
 
     <update id="updateBasicInfo">
@@ -129,26 +129,18 @@
         where id = #{id}
     </update>
 
-    <update id="updateUserBalanceBySign">
-        update biz_user t
-        set t.balance    = t.balance + #{balance},
-            t.updateTime = now()
-        where t.id = #{id};
-    </update>
-
-    <select id="queryUserBalanceForUpdate" resultType="java.lang.Long">
-        select balance
-        from biz_user
-        where id = #{id}
-            FOR
-                UPDATE;
-    </select>
-
     <update id="updateSalaryBalance">
         update biz_user t
         set t.salary   = t.salary - #{salary},
             updateTime = now()
         where id = #{id}
+    </update>
+
+    <update id="updateBalanceById" parameterType="BizUser">
+        update `biz_user` t
+        set t.`balance`=t.`balance` + #{balance},
+            t.`updateTime`=now()
+        where t.`id` = #{id};
     </update>
 
 </mapper>

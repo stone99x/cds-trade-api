@@ -21,6 +21,7 @@ public class FrameConstant {
     public static final String dfs6 = "yyyyMMdd";
     public static final String dfs7 = "yyyy-MM-dd 00:00:00";
     public static final String dfs8 = "yyyy-MM-dd 23:59:59";
+    public static final String dfs9 = "yyMMddhhmmsss";
 
 
     public static final ThreadLocal<SimpleDateFormat> dateFormatter = ThreadLocal.withInitial(() -> new SimpleDateFormat(dfs));

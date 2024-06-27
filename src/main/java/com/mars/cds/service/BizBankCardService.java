@@ -5,6 +5,7 @@ import com.mars.cds.entity.BizBankCard;
 import com.mars.cds.entity.BizUser;
 import com.mars.cds.mapper.BizBankCardMapper;
 import com.mars.cds.support.LogUtils;
+import com.mars.cds.support.NumberUtil;
 import com.mars.cds.support.RespBody;
 import com.mars.cds.support.RespBodyUtils;
 import com.mars.cds.vo.BankCardVo;
@@ -52,12 +53,12 @@ public class BizBankCardService {
         bankCardVo.setBankIfsc(bankCardVo.getBankIfsc().trim());
         bankCardVo.setCardNumber(bankCardVo.getCardNumber().trim());
 
-        if (bizBankCardMapper.queryExistBankIfsc(bankCardVo) > 0) {
+        if (bizBankCardMapper.queryExistBankIfsc(bankCardVo) > NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "银行ifsc已添加", userId, bankCardVo.getBankIfsc());
             return RespBodyUtils.failure("Bank ifsc has been added");
         }
 
-        if (bizBankCardMapper.queryExistCardNumber(bankCardVo) > 0) {
+        if (bizBankCardMapper.queryExistCardNumber(bankCardVo) > NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "银行卡号已添加", userId, bankCardVo.getCardNumber());
             return RespBodyUtils.failure("Bank card number has been added");
         }
@@ -72,7 +73,7 @@ public class BizBankCardService {
 
     public RespBody<String> updateBankCardDefault(BizUser user, BizBankCard bankCard) {
         int userId = user.getId();
-        if (bankCard.getId() <= 0) {
+        if (bankCard.getId() <= NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "设置默认银行卡参数错误", userId, bankCard.getId());
             return RespBodyUtils.failure("Parameter error");
         }
@@ -88,7 +89,7 @@ public class BizBankCardService {
 
     public RespBody<String> deleteBackCard(BizUser user, BizBankCard bankCard) {
         int userId = user.getId();
-        if (bankCard.getId() <= 0) {
+        if (bankCard.getId() <= NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "删除银行卡参数错误", userId, bankCard.getId());
             return RespBodyUtils.failure("Parameter error");
         }

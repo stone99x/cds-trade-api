@@ -1,5 +1,6 @@
 package com.mars.cds.support;
 
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -552,5 +553,11 @@ public class FrameUtils {
             LogUtils.error(log, "getJsonArray错误", json, e);
             return new ArrayList<>(0);
         }
+    }
+
+    public static String getOrderNo() {
+        String timeSeq = DateUtil.date().toString(FrameConstant.dfs9);
+        String randomStr = getRandomIntLen(5);
+        return String.format("TC%s%s", timeSeq, randomStr);
     }
 }

@@ -280,7 +280,7 @@ public class BizUserService {
         try {
             String appSidKey = String.format(FrameConstant.appSidKey, sessionId);
             String appRefreshKey = String.format(FrameConstant.appRefreshKey, sessionId);
-            bizUserMapper.updateOnlineStatus(bizUser.getId());
+            bizUserMapper.updateOfflineStatus(bizUser.getId());
             // 删除缓存信息
             redisClientBean.remove(appSidKey);
             redisClientBean.remove(appRefreshKey);

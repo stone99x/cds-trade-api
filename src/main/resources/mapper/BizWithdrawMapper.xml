@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mars.cds.mapper.BizWithdrawMapper">
+
+    <insert id="saveWithdraw" parameterType="BizWithdraw" keyColumn="id" keyProperty="id" useGeneratedKeys="true">
+        insert into `biz_withdraw`(`userId`, `cryptoId`, `networkId`, `orderNo`, `address`, `amount`, `networkFee`)
+            value (#{userId}, #{cryptoId}, #{networkId}, #{orderNo}, #{address}, #{amount}, #{networkFee});
+    </insert>
+
+    <select id="queryIsExistOrderNo" resultType="int" parameterType="string">
+        select count(1)
+        from `biz_withdraw` t
+        where t.`orderNo` = #{orderNo};
+    </select>
+
+    <select id="queryWithdrawListCount" resultType="int" parameterType="BizWithdraw">
+        select count(1)
+        from `biz_withdraw` t
+        where t.`orderNo` = #{orderNo};
+    </select>
+
+    <select id="queryWithdrawList" resultType="BizWithdraw" parameterType="BizWithdraw">
+        select `id`,
+               `userId`,
+               `cryptoId`,
+               `networkId`,
+               `orderNo`,
+               `txId`,
+               `address`,
+               `amount`,
+               `networkFee`,
+               `status`,
+               `createTime`,
+               `updateTie`
+        from `biz_withdraw` t
+        where t.`userId` = #{userId} LIMIT #{position}
+            , #{pageSize}
+    </select>
+
+</mapper>

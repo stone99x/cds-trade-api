@@ -31,6 +31,8 @@ public interface BizUserMapper {
 
     BizUser queryUserDetailById(int userId);
 
+    BizUser queryUserDetailByIdLock(int userId);
+
     /**
      * 根据手机号重置用户密码
      */
@@ -39,14 +41,9 @@ public interface BizUserMapper {
     void updateUserLastLoginInfo(BizUser bizUser);
 
     /**
-     * 修改用户在线状态
+     * 修改用户在线状态为：离线
      */
-    void updateOnlineStatus(Integer id);
-
-    /**
-     * 查询用户余额相关
-     */
-    BizUser queryBalanceInfo(int userId);
+    void updateOfflineStatus(int id);
 
     /**
      * 设置修改基础信息
@@ -54,19 +51,9 @@ public interface BizUserMapper {
     void updateBasicInfo(BizUser bizUser);
 
     /**
-     * 签到送用户奖金
-     *
-     * @param build
-     */
-    void updateUserBalanceBySign(BizUser build);
-
-    /**
-     * 查询用户余额
-     */
-    Long queryUserBalanceForUpdate(Integer id);
-
-    /**
      * 新增登录日日志
      */
     void insertUserLoginLog(BizUserLoginLog bizUserLoginLog);
+
+    void updateBalanceById(BizUser user);
 }

@@ -5,6 +5,7 @@ import com.mars.cds.entity.BizUser;
 import com.mars.cds.entity.BizWalletAddress;
 import com.mars.cds.mapper.BizWalletAddressMapper;
 import com.mars.cds.support.LogUtils;
+import com.mars.cds.support.NumberUtil;
 import com.mars.cds.support.RespBody;
 import com.mars.cds.support.RespBodyUtils;
 import com.mars.cds.vo.WalletAddressVo;
@@ -33,7 +34,7 @@ public class BizWalletAddressService {
             LogUtils.info(log, "钱包地址格式不正确", walletAddress.getAddress());
             return RespBodyUtils.failure("The wallet address format is incorrect");
         }
-        if (walletAddress.getNetworkId() <= 0) {
+        if (walletAddress.getNetworkId() <= NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "不支持的网络地址", walletAddress.getNetworkId());
             return RespBodyUtils.failure("Unsupported network address");
         }
@@ -41,7 +42,7 @@ public class BizWalletAddressService {
         walletAddress.setUserId(user.getId());
         walletAddress.setAddress(walletAddress.getAddress());
 
-        if (bizWalletAddressMapper.queryIsExistWallet(walletAddress.getAddress()) > 0) {
+        if (bizWalletAddressMapper.queryIsExistWallet(walletAddress.getAddress()) > NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "钱包地址已添加", walletAddress.getAddress());
             return RespBodyUtils.failure("Wallet address added");
         }
@@ -56,7 +57,7 @@ public class BizWalletAddressService {
     }
 
     public RespBody<String> deleteWalletAddress(BizUser user, BizWalletAddress walletAddress) {
-        if (walletAddress.getId() <= 0) {
+        if (walletAddress.getId() <= NumberUtil.NUMBER_ZERO) {
             LogUtils.info(log, "参数错误", walletAddress.getAddress());
             return RespBodyUtils.failure("Parameter error");
         }
